@@ -40,10 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userData = await authApi.getMe();
       // Only allow owner and manager
-      if (userData.user_type === 'accountant') {
-        clearAuth();
-        return;
-      }
+      // if (userData.user_type === 'accountant') {
+      //   clearAuth();
+      //   return;
+      // }
       setUser(userData);
     } catch {
       clearAuth();

@@ -7,13 +7,13 @@ export interface LoginInput {
 }
 
 export const authApi = {
-  login: (data: LoginInput) => apiClient.post<TokenResponse>("/token/pair", data),
+  login: (data: LoginInput) => apiClient.post<TokenResponse>("/auth/token", data),
 
   refresh: (refreshToken: string) =>
-    apiClient.post<{ access: string }>("/token/refresh/", { refresh: refreshToken }),
+    apiClient.post<{ access: string }>("/auth/token/refresh/", { refresh: refreshToken }),
 
   logout: (refreshToken: string) =>
-    apiClient.post("/token/blacklist/", { refresh: refreshToken }),
+    apiClient.post("/auth/token/blacklist/", { refresh: refreshToken }),
 
   getMe: () => apiClient.get<User>("/users/me"),
 

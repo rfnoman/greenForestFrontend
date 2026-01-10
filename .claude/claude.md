@@ -234,7 +234,7 @@ export const apiClient = new ApiClient();
 
 ### Authentication
 
-#### POST `/token/pair` - Login
+#### POST `/auth/token` - Login
 **Request:**
 ```json
 {
@@ -252,7 +252,7 @@ export const apiClient = new ApiClient();
 ```
 **Note:** The `role_id` should be stored and sent as `X-Role` header with subsequent API requests.
 
-#### POST `/token/refresh/` - Refresh Token
+#### POST `/auth/token/refresh/` - Refresh Token
 **Request:**
 ```json
 {
@@ -266,7 +266,7 @@ export const apiClient = new ApiClient();
 }
 ```
 
-#### POST `/token/blacklist/` - Logout
+#### POST `/auth/token/blacklist/` - Logout
 **Request:**
 ```json
 {

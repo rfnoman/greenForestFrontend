@@ -11,11 +11,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { journalEntriesApi } from "@/lib/api/journal-entries";
 import { useAccounts } from "@/lib/hooks/use-accounts";
 import { useBusiness } from "@/lib/hooks/use-business";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { journalEntrySchema, JournalEntryFormData } from "@/lib/utils/validation";
 import { formatCurrency, parseDecimal } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -26,8 +26,10 @@ export default function NewJournalEntryPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { currentBusiness } = useBusiness();
+  const { user } = useAuth();
   const { data: accounts } = useAccounts();
   const currency = currentBusiness?.currency || "USD";
+  const canPostJournal = user?.user_type === "accountant_supervisor";
 
   const createEntry = useMutation({
     mutationFn: (data: JournalEntryFormData) => journalEntriesApi.create({
@@ -183,14 +185,18 @@ export default function NewJournalEntryPage() {
           </Card>
 
           <div className="flex items-center justify-between">
-            <FormField control={form.control} name="auto_post" render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
-                <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                </FormControl>
-                <FormLabel className="!mt-0">Post immediately</FormLabel>
-              </FormItem>
-            )} />
+            {canPostJournal ? (
+              <FormField control={form.control} name="auto_post" render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormLabel className="!mt-0">Post immediately</FormLabel>
+                </FormItem>
+              )} />
+            ) : (
+              <div />
+            )}
             <div className="flex gap-4">
               <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
               <Button type="submit" disabled={createEntry.isPending || !isBalanced}>

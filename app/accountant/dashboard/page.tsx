@@ -12,7 +12,7 @@ import type { User } from "@/lib/types";
 
 const ACCESS_TOKEN_KEY = "greenforest_accountant_access_token";
 const REFRESH_TOKEN_KEY = "greenforest_accountant_refresh_token";
-const ROLE_ID_KEY = "greenforest_accountant_role_id";
+const ROLE_ID_KEY = "greenforest_role_id";
 
 export default function AccountantDashboardPage() {
   const router = useRouter();
@@ -87,9 +87,12 @@ export default function AccountantDashboardPage() {
       // Store impersonated user's tokens in the main app's storage
       localStorage.setItem("greenforest_access_token", response.access);
       localStorage.setItem("greenforest_refresh_token", response.refresh);
-      // Store the role_id (use response.role_id if available, otherwise use the impersonated user's id)
-      const roleId = response.role_id || response.user.id;
-      localStorage.setItem("greenforest_role_id", roleId);
+      // Preserve the accountant's role_id so X-Role header continues to be sent
+      // This ensures the API returns user_type: 'accountant' for the impersonated session
+      const accountantRoleId = localStorage.getItem(ROLE_ID_KEY);
+      if (accountantRoleId) {
+        localStorage.setItem("greenforest_role_id", accountantRoleId);
+      }
       // Set flag to indicate this is an impersonated session
       localStorage.setItem("greenforest_impersonated", "true");
 

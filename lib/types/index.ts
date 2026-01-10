@@ -6,7 +6,7 @@ export interface TokenResponse {
 }
 
 // User
-export type UserType = 'owner' | 'manager' | 'accountant';
+export type UserType = 'owner' | 'manager' | 'accountant' | 'accountant_supervisor';
 
 export interface User {
   id: string;

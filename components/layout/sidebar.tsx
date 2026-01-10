@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -33,33 +32,24 @@ interface NavItem {
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Upload", href: "/upload", icon: Upload, allowedUserTypes: ["owner", "manager"] },
-  { name: "Accounts", href: "/accounts", icon: BookOpen, allowedUserTypes: ["accountant"] },
-  { name: "Contacts", href: "/contacts", icon: Users, allowedUserTypes: ["accountant"] },
-  { name: "Invoices", href: "/invoices", icon: FileText, allowedUserTypes: ["accountant"] },
-  { name: "Bills", href: "/bills", icon: Receipt, allowedUserTypes: ["accountant"] },
-  { name: "Expenses", href: "/expenses", icon: CreditCard, allowedUserTypes: ["accountant"] },
-  { name: "Journal Entries", href: "/journal-entries", icon: FileSpreadsheet, allowedUserTypes: ["accountant"] },
-  { name: "Banking", href: "/banking/accounts", icon: Landmark, allowedUserTypes: ["accountant"] },
-  { name: "Reports", href: "/reports", icon: BarChart3, allowedUserTypes: ["accountant"] },
-  { name: "Settings", href: "/settings", icon: Settings, allowedUserTypes: ["accountant"] },
+  { name: "Accounts", href: "/accounts", icon: BookOpen, allowedUserTypes: ["accountant", "accountant_supervisor"] },
+  { name: "Contacts", href: "/contacts", icon: Users, allowedUserTypes: ["accountant", "accountant_supervisor"] },
+  { name: "Invoices", href: "/invoices", icon: FileText, allowedUserTypes: ["accountant", "accountant_supervisor"] },
+  { name: "Bills", href: "/bills", icon: Receipt, allowedUserTypes: ["accountant", "accountant_supervisor"] },
+  { name: "Expenses", href: "/expenses", icon: CreditCard, allowedUserTypes: ["accountant", "accountant_supervisor"] },
+  { name: "Journal Entries", href: "/journal-entries", icon: FileSpreadsheet, allowedUserTypes: ["accountant", "accountant_supervisor"] },
+  { name: "Banking", href: "/banking/accounts", icon: Landmark, allowedUserTypes: ["accountant", "accountant_supervisor"] },
+  { name: "Reports", href: "/reports", icon: BarChart3, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Settings", href: "/settings", icon: Settings, allowedUserTypes: ["accountant", "accountant_supervisor"] },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [isImpersonated, setIsImpersonated] = useState(false);
-
-  useEffect(() => {
-    // Check if this is an impersonated session from accountant portal
-    const impersonated = localStorage.getItem("greenforest_impersonated") === "true";
-    setIsImpersonated(impersonated);
-  }, []);
 
   const filteredNavigation = navigation.filter((item) => {
     // Always show items without restrictions (like Dashboard)
     if (!item.allowedUserTypes) return true;
-    // Show all pages if user is impersonated from accountant portal
-    if (isImpersonated) return true;
     // Hide restricted items if user is not loaded yet
     if (!user?.user_type) return false;
     // Only show if user's type is in the allowed list
@@ -75,13 +65,10 @@ export function Sidebar() {
             <div className="flex flex-col">
               <span>GreenForest</span>
               <span className="text-xs font-normal text-muted-foreground">
-                {isImpersonated ? 'Accountant Admin' : (
-                  <>
-                    {user?.user_type === 'owner' && 'Owner'}
-                    {user?.user_type === 'manager' && 'Manager'}
-                    {user?.user_type === 'accountant' && 'Accountant Admin'}
-                  </>
-                )}
+                {user?.user_type === 'owner' && 'Owner'}
+                {user?.user_type === 'manager' && 'Manager'}
+                {user?.user_type === 'accountant' && 'Accountant'}
+                {user?.user_type === 'accountant_supervisor' && 'Accountant Supervisor'}
               </span>
             </div>
           </Link>
