@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearAuth = useCallback(() => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem("greenforest_impersonated");
     apiClient.setAccessToken(null);
     setUser(null);
   }, []);
@@ -35,6 +36,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const userData = await authApi.getMe();
+      // Only allow owner and manager
+      if (userData.user_type === 'accountant') {
+        clearAuth();
+        return;
+      }
       setUser(userData);
     } catch {
       clearAuth();
@@ -73,7 +79,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(ACCESS_TOKEN_KEY, access);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
     apiClient.setAccessToken(access);
-    await refreshUser();
+
+    // Fetch user data to check user type
+    const userData = await authApi.getMe();
+
+    // Only allow owner and manager to login
+    if (userData.user_type === 'accountant') {
+      clearAuth();
+      throw new Error('Access denied. Only owners and managers can login to this portal.');
+    }
+
+    setUser(userData);
     router.push("/");
   };
 

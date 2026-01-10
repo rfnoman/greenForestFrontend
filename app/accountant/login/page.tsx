@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { apiClient } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 import { loginSchema, LoginFormData } from "@/lib/utils/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +27,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-export default function LoginPage() {
-  const { login } = useAuth();
+const ACCESS_TOKEN_KEY = "greenforest_accountant_access_token";
+const REFRESH_TOKEN_KEY = "greenforest_accountant_refresh_token";
+
+export default function AccountantLoginPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
@@ -40,9 +45,26 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
-      toast.success("Welcome back!");
+      const { access, refresh } = await authApi.login({ email: data.email, password: data.password });
+
+      // Temporarily set token to fetch user data
+      apiClient.setAccessToken(access);
+      const userData = await authApi.getMe();
+
+      // Only allow accountant to login
+      if (userData.user_type !== 'accountant') {
+        apiClient.setAccessToken(null);
+        throw new Error('Access denied. Only accountants can login to this portal.');
+      }
+
+      // Store tokens with accountant-specific keys
+      localStorage.setItem(ACCESS_TOKEN_KEY, access);
+      localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+
+      toast.success("Welcome back, Accountant!");
+      router.push("/accountant/dashboard");
     } catch (error) {
+      apiClient.setAccessToken(null);
       if (error instanceof Error && error.message.includes('Access denied')) {
         toast.error(error.message);
       } else {
@@ -62,9 +84,9 @@ export default function LoginPage() {
             <span className="text-2xl font-bold">GreenForest</span>
           </div>
         </div>
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
+        <CardTitle className="text-2xl">Accountant Portal</CardTitle>
         <CardDescription>
-          Enter your email and password to sign in
+          Sign in to access the accountant dashboard
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -79,7 +101,7 @@ export default function LoginPage() {
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder="accountant@example.com"
                       {...field}
                     />
                   </FormControl>

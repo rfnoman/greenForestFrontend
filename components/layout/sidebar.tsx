@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -46,10 +47,19 @@ const navigation: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [isImpersonated, setIsImpersonated] = useState(false);
+
+  useEffect(() => {
+    // Check if this is an impersonated session from accountant portal
+    const impersonated = localStorage.getItem("greenforest_impersonated") === "true";
+    setIsImpersonated(impersonated);
+  }, []);
 
   const filteredNavigation = navigation.filter((item) => {
     // Always show items without restrictions (like Dashboard)
     if (!item.allowedUserTypes) return true;
+    // Show all pages if user is impersonated from accountant portal
+    if (isImpersonated) return true;
     // Hide restricted items if user is not loaded yet
     if (!user?.user_type) return false;
     // Only show if user's type is in the allowed list
@@ -65,9 +75,13 @@ export function Sidebar() {
             <div className="flex flex-col">
               <span>GreenForest</span>
               <span className="text-xs font-normal text-muted-foreground">
-                {user?.user_type === 'owner' && 'Owner'}
-                {user?.user_type === 'manager' && 'Manager'}
-                {user?.user_type === 'accountant' && 'Accountant Admin'}
+                {isImpersonated ? 'Accountant Admin' : (
+                  <>
+                    {user?.user_type === 'owner' && 'Owner'}
+                    {user?.user_type === 'manager' && 'Manager'}
+                    {user?.user_type === 'accountant' && 'Accountant Admin'}
+                  </>
+                )}
               </span>
             </div>
           </Link>
