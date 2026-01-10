@@ -29,6 +29,7 @@ import {
 
 const ACCESS_TOKEN_KEY = "greenforest_accountant_access_token";
 const REFRESH_TOKEN_KEY = "greenforest_accountant_refresh_token";
+const ROLE_ID_KEY = "greenforest_accountant_role_id";
 
 export default function AccountantLoginPage() {
   const router = useRouter();
@@ -45,26 +46,30 @@ export default function AccountantLoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const { access, refresh } = await authApi.login({ email: data.email, password: data.password });
+      const { access, refresh, role_id } = await authApi.login({ email: data.email, password: data.password });
 
       // Temporarily set token to fetch user data
       apiClient.setAccessToken(access);
+      apiClient.setRoleId(role_id);
       const userData = await authApi.getMe();
 
       // Only allow accountant to login
       if (userData.user_type !== 'accountant') {
         apiClient.setAccessToken(null);
+        apiClient.setRoleId(null);
         throw new Error('Access denied. Only accountants can login to this portal.');
       }
 
       // Store tokens with accountant-specific keys
       localStorage.setItem(ACCESS_TOKEN_KEY, access);
       localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+      localStorage.setItem(ROLE_ID_KEY, role_id);
 
       toast.success("Welcome back, Accountant!");
       router.push("/accountant/dashboard");
     } catch (error) {
       apiClient.setAccessToken(null);
+      apiClient.setRoleId(null);
       if (error instanceof Error && error.message.includes('Access denied')) {
         toast.error(error.message);
       } else {

@@ -19,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ACCESS_TOKEN_KEY = "greenforest_access_token";
 const REFRESH_TOKEN_KEY = "greenforest_refresh_token";
+const ROLE_ID_KEY = "greenforest_role_id";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -28,8 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearAuth = useCallback(() => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(ROLE_ID_KEY);
     localStorage.removeItem("greenforest_impersonated");
     apiClient.setAccessToken(null);
+    apiClient.setRoleId(null);
     setUser(null);
   }, []);
 
@@ -50,8 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const roleId = localStorage.getItem(ROLE_ID_KEY);
       if (accessToken) {
         apiClient.setAccessToken(accessToken);
+        if (roleId) {
+          apiClient.setRoleId(roleId);
+        }
         try {
           await refreshUser();
         } catch {
@@ -75,10 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshUser, clearAuth]);
 
   const login = async (email: string, password: string) => {
-    const { access, refresh } = await authApi.login({ email, password });
+    const { access, refresh, role_id } = await authApi.login({ email, password });
     localStorage.setItem(ACCESS_TOKEN_KEY, access);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+    localStorage.setItem(ROLE_ID_KEY, role_id);
     apiClient.setAccessToken(access);
+    apiClient.setRoleId(role_id);
 
     // Fetch user data to check user type
     const userData = await authApi.getMe();

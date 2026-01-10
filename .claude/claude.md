@@ -246,9 +246,11 @@ export const apiClient = new ApiClient();
 ```json
 {
   "access": "jwt_access_token",
-  "refresh": "jwt_refresh_token"
+  "refresh": "jwt_refresh_token",
+  "role_id": "uuid"
 }
 ```
+**Note:** The `role_id` should be stored and sent as `X-Role` header with subsequent API requests.
 
 #### POST `/token/refresh/` - Refresh Token
 **Request:**
@@ -278,6 +280,21 @@ export const apiClient = new ApiClient();
 ### Users
 
 #### GET `/users/me` - Get Current User
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `X-Role: <user_uuid>` (optional) - When provided, returns the current user's data but with the `user_type` from the user specified by the UUID
+
+**Behavior:**
+- Without `X-Role` header: Returns the current authenticated user with their own `user_type`
+- With `X-Role` header: Returns the current authenticated user's data but with the `user_type` from the user specified by the UUID
+
+**Example Request with X-Role:**
+```bash
+curl -X GET /api/v1/users/me \
+  -H "Authorization: Bearer <token>" \
+  -H "X-Role: d78bd691-cd69-422c-9ab5-4c13ebb94bd6"
+```
+
 **Response:**
 ```json
 {

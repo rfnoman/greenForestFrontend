@@ -2,6 +2,7 @@
 export interface TokenResponse {
   access: string;
   refresh: string;
+  role_id: string;
 }
 
 // User

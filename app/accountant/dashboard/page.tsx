@@ -12,6 +12,7 @@ import type { User } from "@/lib/types";
 
 const ACCESS_TOKEN_KEY = "greenforest_accountant_access_token";
 const REFRESH_TOKEN_KEY = "greenforest_accountant_refresh_token";
+const ROLE_ID_KEY = "greenforest_accountant_role_id";
 
 export default function AccountantDashboardPage() {
   const router = useRouter();
@@ -22,17 +23,22 @@ export default function AccountantDashboardPage() {
   useEffect(() => {
     const initAuth = async () => {
       const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const roleId = localStorage.getItem(ROLE_ID_KEY);
       if (!accessToken) {
         router.push("/accountant/login");
         return;
       }
 
       apiClient.setAccessToken(accessToken);
+      if (roleId) {
+        apiClient.setRoleId(roleId);
+      }
       try {
         const userData = await authApi.getMe();
         if (userData.user_type !== 'accountant') {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(REFRESH_TOKEN_KEY);
+          localStorage.removeItem(ROLE_ID_KEY);
           router.push("/accountant/login");
           return;
         }
@@ -44,6 +50,7 @@ export default function AccountantDashboardPage() {
       } catch {
         localStorage.removeItem(ACCESS_TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
+        localStorage.removeItem(ROLE_ID_KEY);
         router.push("/accountant/login");
       } finally {
         setIsLoading(false);
@@ -64,13 +71,15 @@ export default function AccountantDashboardPage() {
     }
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(ROLE_ID_KEY);
     apiClient.setAccessToken(null);
+    apiClient.setRoleId(null);
     router.push("/accountant/login");
   };
 
   const handleImpersonate = async (ownerEmail: string) => {
     try {
-      const response = await apiClient.post<{ access: string; refresh: string; user: User }>(
+      const response = await apiClient.post<{ access: string; refresh: string; user: User; role_id?: string }>(
         "/users/impersonate",
         { email: ownerEmail }
       );
@@ -78,6 +87,9 @@ export default function AccountantDashboardPage() {
       // Store impersonated user's tokens in the main app's storage
       localStorage.setItem("greenforest_access_token", response.access);
       localStorage.setItem("greenforest_refresh_token", response.refresh);
+      // Store the role_id (use response.role_id if available, otherwise use the impersonated user's id)
+      const roleId = response.role_id || response.user.id;
+      localStorage.setItem("greenforest_role_id", roleId);
       // Set flag to indicate this is an impersonated session
       localStorage.setItem("greenforest_impersonated", "true");
 
@@ -85,7 +97,7 @@ export default function AccountantDashboardPage() {
 
       // Redirect to main dashboard
       window.location.href = "/";
-    } catch (error) {
+    } catch {
       toast.error("Failed to impersonate user");
     }
   };
