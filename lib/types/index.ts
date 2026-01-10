@@ -5,6 +5,8 @@ export interface TokenResponse {
 }
 
 // User
+export type UserType = 'owner' | 'manager' | 'accountant';
+
 export interface User {
   id: string;
   email: string;
@@ -12,6 +14,7 @@ export interface User {
   first_name: string;
   last_name: string;
   avatar_url: string | null;
+  user_type: UserType;
   is_email_verified: boolean;
   is_active: boolean;
   date_joined: string;
