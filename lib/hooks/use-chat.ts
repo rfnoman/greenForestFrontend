@@ -1,16 +1,25 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { ExtractedReceiptData } from "@/lib/types";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  fileIds?: string[];
 }
 
 interface ChatSession {
   id: string;
   title: string;
   created_at: string;
+}
+
+interface FileProcessingResult {
+  fileId: string;
+  status: "processing" | "completed" | "error";
+  extractedData?: ExtractedReceiptData;
+  error?: string;
 }
 
 interface WebSocketMessage {
@@ -20,6 +29,12 @@ interface WebSocketMessage {
   session_id?: string;
   messages?: ChatMessage[];
   sessions?: ChatSession[];
+  file_ids?: string[];
+  file_id?: string;
+  count?: number;
+  extracted_data?: ExtractedReceiptData;
+  error?: string;
+  tools_enabled?: boolean;
 }
 
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
@@ -31,6 +46,8 @@ export function useChat(token: string | null, businessId: string | null) {
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [processingFiles, setProcessingFiles] = useState<FileProcessingResult[]>([]);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const currentResponseRef = useRef("");
@@ -120,6 +137,7 @@ export function useChat(token: string | null, businessId: string | null) {
 
         switch (data.type) {
           case "connection_established":
+            // Connection successful, tools_enabled indicates if AI tools are available
             break;
 
           case "message_received":
@@ -129,8 +147,62 @@ export function useChat(token: string | null, businessId: string | null) {
             currentResponseRef.current = "";
             break;
 
+          case "processing_files":
+            // Server is processing uploaded files
+            setIsProcessingFiles(true);
+            break;
+
+          case "file_processed":
+            // A file has been processed successfully
+            if (data.file_id) {
+              setProcessingFiles((prev) => {
+                const existing = prev.find((f) => f.fileId === data.file_id);
+                if (existing) {
+                  return prev.map((f) =>
+                    f.fileId === data.file_id
+                      ? { ...f, status: "completed" as const, extractedData: data.extracted_data }
+                      : f
+                  );
+                }
+                return [
+                  ...prev,
+                  {
+                    fileId: data.file_id!,
+                    status: "completed" as const,
+                    extractedData: data.extracted_data,
+                  },
+                ];
+              });
+            }
+            break;
+
+          case "file_processing_error":
+            // A file failed to process
+            if (data.file_id) {
+              setProcessingFiles((prev) => {
+                const existing = prev.find((f) => f.fileId === data.file_id);
+                if (existing) {
+                  return prev.map((f) =>
+                    f.fileId === data.file_id
+                      ? { ...f, status: "error" as const, error: data.error }
+                      : f
+                  );
+                }
+                return [
+                  ...prev,
+                  {
+                    fileId: data.file_id!,
+                    status: "error" as const,
+                    error: data.error,
+                  },
+                ];
+              });
+            }
+            break;
+
           case "response_start":
             setIsTyping(true);
+            setIsProcessingFiles(false);
             setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
             break;
 
@@ -150,6 +222,7 @@ export function useChat(token: string | null, businessId: string | null) {
 
           case "response_end":
             setIsTyping(false);
+            setIsProcessingFiles(false);
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(JSON.stringify({ type: "list_sessions" }));
             }
@@ -159,6 +232,7 @@ export function useChat(token: string | null, businessId: string | null) {
             if (data.session_id) {
               setSessionId(data.session_id);
               setMessages([]);
+              setProcessingFiles([]);
             }
             break;
 
@@ -169,6 +243,7 @@ export function useChat(token: string | null, businessId: string | null) {
             if (data.session_id) {
               setSessionId(data.session_id);
             }
+            setProcessingFiles([]);
             break;
 
           case "sessions_list":
@@ -180,6 +255,7 @@ export function useChat(token: string | null, businessId: string | null) {
           case "error":
             setError(data.message || "An error occurred");
             setIsTyping(false);
+            setIsProcessingFiles(false);
             break;
         }
       };
@@ -207,18 +283,30 @@ export function useChat(token: string | null, businessId: string | null) {
     };
   }, [token, businessId]);
 
-  const sendMessage = useCallback((content: string) => {
+  const sendMessage = useCallback((content: string, fileIds?: string[]) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       setError("Not connected to chat server");
       return;
     }
 
-    setMessages((prev) => [...prev, { role: "user", content }]);
+    // Add user message with optional file references
+    setMessages((prev) => [...prev, { role: "user", content, fileIds }]);
+
+    // Determine message type based on whether files are included
+    const messageType = fileIds && fileIds.length > 0 ? "chat_with_files" : "chat";
+
+    // Initialize processing state for files
+    if (fileIds && fileIds.length > 0) {
+      setProcessingFiles(
+        fileIds.map((id) => ({ fileId: id, status: "processing" as const }))
+      );
+    }
 
     wsRef.current.send(
       JSON.stringify({
-        type: "chat",
+        type: messageType,
         message: content,
+        ...(fileIds && fileIds.length > 0 && { file_ids: fileIds }),
         session_id: sessionId,
       })
     );
@@ -241,6 +329,7 @@ export function useChat(token: string | null, businessId: string | null) {
 
     setMessages([]);
     setSessionId(null);
+    setProcessingFiles([]);
     wsRef.current.send(JSON.stringify({ type: "new_session" }));
   }, []);
 
@@ -254,6 +343,10 @@ export function useChat(token: string | null, businessId: string | null) {
     setError(null);
   }, []);
 
+  const clearProcessingFiles = useCallback(() => {
+    setProcessingFiles([]);
+  }, []);
+
   return {
     messages,
     sessions,
@@ -261,10 +354,13 @@ export function useChat(token: string | null, businessId: string | null) {
     isTyping,
     sessionId,
     error,
+    processingFiles,
+    isProcessingFiles,
     sendMessage,
     loadSession,
     newSession,
     listSessions,
     clearError,
+    clearProcessingFiles,
   };
 }

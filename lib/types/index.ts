@@ -533,3 +533,64 @@ export interface StartReconciliationInput {
   statement_date: string;
   statement_balance: string;
 }
+
+// Chat File Types
+export type ChatFileType = 'image' | 'pdf';
+export type ChatFileProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface ExtractedReceiptItem {
+  description: string;
+  quantity: number;
+  amount: string;
+}
+
+export interface ExtractedReceiptData {
+  vendor: string | null;
+  date: string | null;
+  total: string | null;
+  tax: string | null;
+  subtotal: string | null;
+  items: ExtractedReceiptItem[];
+  payment_method: string | null;
+  currency: string | null;
+  category_suggestion: string | null;
+  confidence: number | null;
+}
+
+export interface ChatAttachment {
+  id: string;
+  original_filename: string;
+  file_type: ChatFileType;
+  mime_type: string;
+  file_size: number;
+  processing_status: ChatFileProcessingStatus;
+  extracted_data: ExtractedReceiptData;
+  journal_entry_id: string | null;
+  created_at: string;
+}
+
+export interface ChatAttachmentUploadResponse {
+  id: string;
+  original_filename: string;
+  file_type: ChatFileType;
+  processing_status: ChatFileProcessingStatus;
+  message: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ChatSessionDetail extends ChatSession {
+  messages: ChatMessage[];
+}
