@@ -37,6 +37,12 @@ export const journalEntriesApi = {
   create: (data: CreateJournalEntryInput) =>
     apiClient.post<JournalEntry>("/journal-entries", data),
 
+  update: (id: string, data: Partial<CreateJournalEntryInput>) =>
+    apiClient.put<JournalEntry>(`/journal-entries/${id}`, data),
+
+  delete: (id: string) =>
+    apiClient.delete<{ success: boolean; message: string }>(`/journal-entries/${id}`),
+
   post: (id: string) => apiClient.post<JournalEntry>(`/journal-entries/${id}/post`),
 
   void: (id: string, reason: string) =>

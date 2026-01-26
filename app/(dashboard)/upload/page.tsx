@@ -15,6 +15,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -306,11 +307,11 @@ const MessagesArea = memo(function MessagesArea({
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-muted-foreground py-12">
             <div className="rounded-full bg-muted p-4 mb-4">
-              <FileText className="h-8 w-8" />
+              <Bot className="h-8 w-8" />
             </div>
-            <p className="text-center font-medium">Upload receipts to get started</p>
+            <p className="text-center font-medium">How can I help you today?</p>
             <p className="text-center text-sm mt-1">
-              Take a photo or upload a file to process
+              Upload receipts, ask questions, or get help with accounting
             </p>
           </div>
         )}
@@ -489,9 +490,9 @@ export default function UploadPage() {
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Receipt Processing</CardTitle>
+              <CardTitle>Accounting Assistant</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Upload receipts and invoices to extract data automatically
+                Upload receipts, create journal entries, and get help with accounting
               </p>
             </div>
             <div className="flex items-center gap-2">

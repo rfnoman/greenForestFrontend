@@ -27,6 +27,7 @@ interface WebSocketMessage {
   message?: string;
   content?: string;
   session_id?: string;
+  title?: string;
   messages?: ChatMessage[];
   sessions?: ChatSession[];
   file_ids?: string[];
@@ -249,6 +250,19 @@ export function useChat(token: string | null, businessId: string | null) {
           case "sessions_list":
             if (data.sessions) {
               setSessions(data.sessions);
+            }
+            break;
+
+          case "session_title_updated":
+            // Update the title of a specific session
+            if (data.session_id && data.title) {
+              setSessions((prev) =>
+                prev.map((session) =>
+                  session.id === data.session_id
+                    ? { ...session, title: data.title! }
+                    : session
+                )
+              );
             }
             break;
 
