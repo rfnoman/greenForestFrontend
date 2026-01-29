@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Plus, Trash2, CheckCircle, Ban, Pencil } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2, CheckCircle, Ban, Pencil, User } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -509,6 +509,18 @@ export default function JournalEntryDetailPage() {
                 <p className="text-sm text-muted-foreground">Status</p>
                 <div className="mt-1">{getStatusBadge(entry.status)}</div>
               </div>
+              {entry.contact && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Contact</p>
+                  <p className="font-medium flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {entry.contact.name}
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {entry.contact.type}
+                    </Badge>
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

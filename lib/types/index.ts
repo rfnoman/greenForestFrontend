@@ -207,6 +207,12 @@ export interface JournalEntryLine {
   line_order: number;
 }
 
+export interface JournalEntryContact {
+  id: string;
+  name: string;
+  type: ContactType;
+}
+
 export interface JournalEntry {
   id: string;
   entry_number: string;
@@ -218,6 +224,7 @@ export interface JournalEntry {
   posted_at: string | null;
   voided_at: string | null;
   void_reason: string | null;
+  contact: JournalEntryContact | null;
   lines: JournalEntryLine[];
   created_at: string;
 }

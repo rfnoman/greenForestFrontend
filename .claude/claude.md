@@ -811,6 +811,11 @@ curl -X GET /api/v1/users/me \
     "posted_at": "2024-01-01T00:00:00Z | null",
     "voided_at": "2024-01-01T00:00:00Z | null",
     "void_reason": "string | null",
+    "contact": {
+      "id": "uuid",
+      "name": "Contact Name",
+      "type": "customer | vendor | both"
+    } | null,
     "lines": [
       {
         "id": "uuid",
