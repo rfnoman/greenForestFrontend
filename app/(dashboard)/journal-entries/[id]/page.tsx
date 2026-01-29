@@ -512,13 +512,13 @@ export default function JournalEntryDetailPage() {
               {entry.contact && (
                 <div>
                   <p className="text-sm text-muted-foreground">Contact</p>
-                  <p className="font-medium flex items-center gap-2">
+                  <div className="font-medium flex items-center gap-2">
                     <User className="h-4 w-4" />
                     {entry.contact.name}
                     <Badge variant="outline" className="text-xs capitalize">
                       {entry.contact.type}
                     </Badge>
-                  </p>
+                  </div>
                 </div>
               )}
             </CardContent>
