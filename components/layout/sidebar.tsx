@@ -14,7 +14,7 @@ import {
   Settings,
   Leaf,
   FileSpreadsheet,
-  Bot,
+  Upload,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -31,7 +31,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Accounting Assistant", href: "/upload", icon: Bot, allowedUserTypes: ["owner", "manager"] },
+  { name: "Upload Expense", href: "/upload-expense", icon: Upload, allowedUserTypes: ["owner", "manager"] },
   { name: "Accounts", href: "/accounts", icon: BookOpen, allowedUserTypes: ["accountant", "accountant_supervisor"] },
   { name: "Contacts", href: "/contacts", icon: Users, allowedUserTypes: ["accountant", "accountant_supervisor"] },
   { name: "Invoices", href: "/invoices", icon: FileText, allowedUserTypes: ["accountant", "accountant_supervisor"] },
@@ -80,7 +80,7 @@ export function Sidebar() {
               const isActive =
                 item.href === "/"
                   ? pathname === "/"
-                  : pathname.startsWith(item.href);
+                  : pathname === item.href || pathname.startsWith(item.href + "/");
 
               return (
                 <Link

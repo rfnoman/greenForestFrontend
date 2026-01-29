@@ -31,7 +31,9 @@ greenforest/
 │   │   ├── layout.tsx
 │   │   ├── page.tsx                    # Dashboard overview
 │   │   ├── upload/
-│   │   │   └── page.tsx                # Upload with chat (owner/manager only)
+│   │   │   └── page.tsx                # Accounting Assistant with form (owner/manager only)
+│   │   ├── upload-expense/
+│   │   │   └── page.tsx                # Upload Expense - direct chat interface
 │   │   ├── accounts/
 │   │   │   ├── page.tsx                # Chart of accounts list
 │   │   │   └── [id]/page.tsx           # Account details

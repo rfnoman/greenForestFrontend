@@ -754,7 +754,7 @@ const SessionsSidebar = memo(function SessionsSidebar({
       isOpen ? "w-64" : "w-0"
     )}>
       <Card className={cn(
-        "h-full flex-col overflow-hidden transition-all duration-300",
+        "h-full flex-col overflow-hidden transition-all duration-300 rounded-none border-0 border-l",
         isOpen ? "flex w-64" : "hidden"
       )}>
         <CardHeader className="border-b p-3">
@@ -899,9 +899,9 @@ export default function UploadPage() {
   }, []);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-4 p-6">
+    <div className="flex h-[calc(100vh-4rem)]">
       {/* Main Area */}
-      <Card className="flex flex-1 flex-col">
+      <Card className="flex flex-1 flex-col rounded-none border-0 border-r">
         {showChat ? (
           <>
             <CardHeader className="border-b">
