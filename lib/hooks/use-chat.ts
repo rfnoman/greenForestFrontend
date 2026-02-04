@@ -333,6 +333,7 @@ export function useChat(token: string | null, businessId: string | null) {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
     setIsLoading(true);
+    setMessages([]); // Clear messages before loading new session
     setSessionId(id);
     wsRef.current.send(
       JSON.stringify({

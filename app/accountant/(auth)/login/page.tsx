@@ -52,19 +52,26 @@ export default function AccountantLoginPage() {
       apiClient.setAccessToken(access);
       const userData = await authApi.getMe();
 
-      // Only allow accountant to login
-      if (userData.user_type !== 'accountant') {
+      // Allow both accountant and accountant_supervisor to login
+      if (userData.user_type !== 'accountant' && userData.user_type !== 'accountant_supervisor') {
         apiClient.setAccessToken(null);
-        throw new Error('Access denied. Only accountants can login to this portal.');
+        throw new Error('Access denied. Only accountants and supervisors can login to this portal.');
       }
 
-      // Store tokens with accountant-specific keys
-      localStorage.setItem(ACCESS_TOKEN_KEY, access);
-      localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
-      localStorage.setItem(ROLE_ID_KEY, role_id);
-
-      toast.success("Welcome back, Accountant!");
-      router.push("/accountant/dashboard");
+      // Store tokens with appropriate keys based on user type
+      if (userData.user_type === 'accountant_supervisor') {
+        localStorage.setItem("greenforest_supervisor_access_token", access);
+        localStorage.setItem("greenforest_supervisor_refresh_token", refresh);
+        localStorage.setItem("greenforest_supervisor_role_id", role_id);
+        toast.success("Welcome back, Supervisor!");
+        router.push("/accountant-supervisor/dashboard");
+      } else {
+        localStorage.setItem(ACCESS_TOKEN_KEY, access);
+        localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+        localStorage.setItem(ROLE_ID_KEY, role_id);
+        toast.success("Welcome back, Accountant!");
+        router.push("/accountant/dashboard");
+      }
     } catch (error) {
       apiClient.setAccessToken(null);
       if (error instanceof Error && error.message.includes('Access denied')) {
@@ -88,7 +95,7 @@ export default function AccountantLoginPage() {
         </div>
         <CardTitle className="text-2xl">Accountant Portal</CardTitle>
         <CardDescription>
-          Sign in to access the accountant dashboard
+          Sign in to access your dashboard
         </CardDescription>
       </CardHeader>
       <CardContent>

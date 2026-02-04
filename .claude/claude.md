@@ -24,9 +24,19 @@ greenforest/
 │   │   ├── login/page.tsx                # Owner/Manager login
 │   │   └── layout.tsx
 │   ├── accountant/
-│   │   ├── layout.tsx
-│   │   ├── login/page.tsx                # Accountant login
-│   │   └── dashboard/page.tsx            # Accountant dashboard with client list
+│   │   ├── (auth)/
+│   │   │   ├── layout.tsx                # Centered layout for login
+│   │   │   └── login/page.tsx            # Accountant login
+│   │   └── (dashboard-view)/
+│   │       ├── layout.tsx                # Full-page layout for dashboard
+│   │       └── dashboard/page.tsx        # Accountant dashboard with client list
+│   ├── accountant-supervisor/
+│   │   ├── (auth)/
+│   │   │   ├── layout.tsx                # Centered layout for login
+│   │   │   └── login/page.tsx            # Supervisor login
+│   │   └── (dashboard-view)/
+│   │       ├── layout.tsx                # Full-page layout for dashboard
+│   │       └── dashboard/page.tsx        # Supervisor dashboard with journal feed
 │   ├── (dashboard)/
 │   │   ├── layout.tsx
 │   │   ├── page.tsx                    # Dashboard overview
@@ -325,6 +335,7 @@ curl -X GET /api/v1/users/me \
 **Response:** Same as GET `/users/me`
 
 #### GET `/users/owners` - List All Owner Users
+**Access:** Only users with `user_type = "accountant"` or `"accountant_supervisor"` can use this endpoint
 **Response:**
 ```json
 [
@@ -344,7 +355,7 @@ curl -X GET /api/v1/users/me \
 ```
 
 #### POST `/users/impersonate` - Impersonate Owner User
-**Access:** Only users with `user_type = "accountant"` can use this endpoint
+**Access:** Only users with `user_type = "accountant"` or `"accountant_supervisor"` can use this endpoint
 **Request:**
 ```json
 {

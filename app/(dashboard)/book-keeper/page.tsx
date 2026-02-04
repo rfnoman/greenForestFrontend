@@ -291,18 +291,8 @@ const MessagesArea = memo(function MessagesArea({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, isProcessingFiles]);
 
-  if (isLoading && messages.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Connecting to chat...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading && messages.length > 0) {
+  // Show loading state whenever isLoading is true
+  if (isLoading) {
     return (
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
@@ -321,6 +311,11 @@ const MessagesArea = memo(function MessagesArea({
           <div className="flex justify-end">
             <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 animate-pulse">
               <div className="h-4 w-40 bg-muted-foreground/20 rounded" />
+            </div>
+          </div>
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 space-y-2 animate-pulse">
+              <div className="h-4 w-52 bg-muted-foreground/20 rounded" />
             </div>
           </div>
         </div>
@@ -347,49 +342,48 @@ const MessagesArea = memo(function MessagesArea({
   return (
     <ScrollArea className="flex-1 p-4">
       <div className="space-y-4">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+        {messages
+          .filter((message) => message.content.trim() !== "") // Only show messages with content
+          .map((message, index) => (
             <div
-              className={cn(
-                "max-w-[80%] rounded-lg px-4 py-2",
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              )}
+              key={index}
+              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {message.fileIds && message.fileIds.length > 0 && (
-                <div className="flex items-center gap-1 mb-1 text-xs opacity-70">
-                  <Paperclip className="h-3 w-3" />
-                  <span>{message.fileIds.length} file(s) attached</span>
+              <div
+                className={cn(
+                  "max-w-[80%] rounded-lg px-4 py-2",
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                )}
+              >
+                {message.fileIds && message.fileIds.length > 0 && (
+                  <div className="flex items-center gap-1 mb-1 text-xs opacity-70">
+                    <Paperclip className="h-3 w-3" />
+                    <span>{message.fileIds.length} file(s) attached</span>
+                  </div>
+                )}
+                <p className="whitespace-pre-wrap">{message.content}</p>
+              </div>
+            </div>
+          ))}
+
+        {/* Show loader when processing files or typing without content */}
+        {(isProcessingFiles || (isTyping && messages[messages.length - 1]?.content.trim() === "")) && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2">
+              {isProcessingFiles ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Processing uploaded files...</span>
+                </div>
+              ) : (
+                <div className="flex space-x-1">
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.1s]" />
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.2s]" />
                 </div>
               )}
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            </div>
-          </div>
-        ))}
-
-        {isProcessingFiles && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Processing uploaded files...</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isTyping && !isProcessingFiles && messages[messages.length - 1]?.role !== "assistant" && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2">
-              <div className="flex space-x-1">
-                <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
-                <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.1s]" />
-                <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.2s]" />
-              </div>
             </div>
           </div>
         )}

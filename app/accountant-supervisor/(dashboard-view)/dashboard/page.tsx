@@ -2,30 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Leaf, LogOut, Users } from "lucide-react";
+import { Leaf, LogOut, Users, Search } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api/client";
 import { authApi } from "@/lib/api/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { JournalEntryFeed } from "@/components/supervisor/journal-entry-feed";
 import type { User } from "@/lib/types";
 
-const ACCESS_TOKEN_KEY = "greenforest_accountant_access_token";
-const REFRESH_TOKEN_KEY = "greenforest_accountant_refresh_token";
-const ROLE_ID_KEY = "greenforest_role_id";
+const ACCESS_TOKEN_KEY = "greenforest_supervisor_access_token";
+const REFRESH_TOKEN_KEY = "greenforest_supervisor_refresh_token";
+const ROLE_ID_KEY = "greenforest_supervisor_role_id";
 
-export default function AccountantDashboardPage() {
+export default function SupervisorDashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [owners, setOwners] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const initAuth = async () => {
       const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
       const roleId = localStorage.getItem(ROLE_ID_KEY);
       if (!accessToken) {
-        router.push("/accountant/login");
+        router.push("/accountant-supervisor/login");
         return;
       }
 
@@ -35,11 +38,11 @@ export default function AccountantDashboardPage() {
       }
       try {
         const userData = await authApi.getMe();
-        if (userData.user_type !== 'accountant') {
+        if (userData.user_type !== 'accountant_supervisor') {
           localStorage.removeItem(ACCESS_TOKEN_KEY);
           localStorage.removeItem(REFRESH_TOKEN_KEY);
           localStorage.removeItem(ROLE_ID_KEY);
-          router.push("/accountant/login");
+          router.push("/accountant-supervisor/login");
           return;
         }
         setUser(userData);
@@ -51,7 +54,7 @@ export default function AccountantDashboardPage() {
         localStorage.removeItem(ACCESS_TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
         localStorage.removeItem(ROLE_ID_KEY);
-        router.push("/accountant/login");
+        router.push("/accountant-supervisor/login");
       } finally {
         setIsLoading(false);
       }
@@ -74,7 +77,7 @@ export default function AccountantDashboardPage() {
     localStorage.removeItem(ROLE_ID_KEY);
     apiClient.setAccessToken(null);
     apiClient.setRoleId(null);
-    router.push("/accountant/login");
+    router.push("/accountant-supervisor/login");
   };
 
   const handleImpersonate = async (ownerEmail: string) => {
@@ -87,11 +90,10 @@ export default function AccountantDashboardPage() {
       // Store impersonated user's tokens in the main app's storage
       localStorage.setItem("greenforest_access_token", response.access);
       localStorage.setItem("greenforest_refresh_token", response.refresh);
-      // Preserve the accountant's role_id so X-Role header continues to be sent
-      // This ensures the API returns user_type: 'accountant' for the impersonated session
-      const accountantRoleId = localStorage.getItem(ROLE_ID_KEY);
-      if (accountantRoleId) {
-        localStorage.setItem("greenforest_role_id", accountantRoleId);
+      // Preserve the supervisor's role_id so X-Role header continues to be sent
+      const supervisorRoleId = localStorage.getItem(ROLE_ID_KEY);
+      if (supervisorRoleId) {
+        localStorage.setItem("greenforest_role_id", supervisorRoleId);
       }
       // Set flag to indicate this is an impersonated session
       localStorage.setItem("greenforest_impersonated", "true");
@@ -104,6 +106,13 @@ export default function AccountantDashboardPage() {
       toast.error("Failed to impersonate user");
     }
   };
+
+  const filteredOwners = owners.filter(
+    (owner) =>
+      `${owner.first_name} ${owner.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      owner.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      owner.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -122,7 +131,7 @@ export default function AccountantDashboardPage() {
             <Leaf className="h-6 w-6 text-primary" />
             <div className="flex flex-col">
               <span className="font-semibold">GreenForest</span>
-              <span className="text-xs text-muted-foreground">Accountant Admin</span>
+              <span className="text-xs text-muted-foreground">Supervisor Admin</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -138,11 +147,12 @@ export default function AccountantDashboardPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold">Accountant Dashboard</h1>
-          <p className="text-muted-foreground">Select a client to manage their account</p>
+          <h1 className="text-2xl font-bold">Supervisor Dashboard</h1>
+          <p className="text-muted-foreground">Manage journal entries and client accounts</p>
         </div>
 
-        <Card>
+        {/* Client Accounts Section */}
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -153,11 +163,22 @@ export default function AccountantDashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {owners.length === 0 ? (
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search clients..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            {filteredOwners.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">No client accounts found</p>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {owners.map((owner) => (
+                {filteredOwners.map((owner) => (
                   <Card
                     key={owner.id}
                     className="cursor-pointer hover:border-primary transition-colors"
@@ -184,6 +205,19 @@ export default function AccountantDashboardPage() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Journal Entry Feed Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Draft Journal Entries - All Businesses</CardTitle>
+            <CardDescription>
+              Review and post draft entries across all client accounts
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <JournalEntryFeed />
           </CardContent>
         </Card>
       </main>
