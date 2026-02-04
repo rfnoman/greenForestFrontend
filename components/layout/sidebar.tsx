@@ -31,7 +31,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Upload Expense", href: "/upload-expense", icon: Upload, allowedUserTypes: ["owner", "manager"] },
+  { name: "Book keeper", href: "/book-keeper", icon: Upload, allowedUserTypes: ["owner", "manager"] },
   { name: "Accounts", href: "/accounts", icon: BookOpen, allowedUserTypes: ["accountant", "accountant_supervisor"] },
   { name: "Contacts", href: "/contacts", icon: Users, allowedUserTypes: ["accountant", "accountant_supervisor"] },
   { name: "Invoices", href: "/invoices", icon: FileText, allowedUserTypes: ["accountant", "accountant_supervisor"] },

@@ -276,18 +276,57 @@ interface MessagesAreaProps {
   messages: ChatMessage[];
   isTyping: boolean;
   isProcessingFiles: boolean;
+  isLoading: boolean;
 }
 
 const MessagesArea = memo(function MessagesArea({
   messages,
   isTyping,
   isProcessingFiles,
+  isLoading,
 }: MessagesAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, isProcessingFiles]);
+
+  if (isLoading && messages.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Connecting to chat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading && messages.length > 0) {
+    return (
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
+          {/* Skeleton messages */}
+          <div className="flex justify-end">
+            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 animate-pulse">
+              <div className="h-4 w-48 bg-muted-foreground/20 rounded" />
+            </div>
+          </div>
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 space-y-2 animate-pulse">
+              <div className="h-4 w-64 bg-muted-foreground/20 rounded" />
+              <div className="h-4 w-56 bg-muted-foreground/20 rounded" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 animate-pulse">
+              <div className="h-4 w-40 bg-muted-foreground/20 rounded" />
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+    );
+  }
 
   if (messages.length === 0 && !isTyping && !isProcessingFiles) {
     return (
@@ -296,7 +335,7 @@ const MessagesArea = memo(function MessagesArea({
           <div className="mx-auto rounded-full bg-muted p-4 mb-4 w-fit">
             <Bot className="h-8 w-8" />
           </div>
-          <h3 className="text-lg font-semibold">Upload Expense</h3>
+          <h3 className="text-lg font-semibold">Book keeper</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
             Upload receipts or type a message to start recording expenses
           </p>
@@ -457,6 +496,7 @@ export default function UploadExpensePage() {
     sessionId,
     error,
     isProcessingFiles,
+    isLoading,
     sendMessage,
     loadSession,
     newSession,
@@ -515,7 +555,7 @@ export default function UploadExpensePage() {
                 </Button>
               )}
               <div>
-                <CardTitle>Upload Expense</CardTitle>
+                <CardTitle>Book keeper</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   Upload receipts and record expenses with AI assistance
                 </p>
@@ -560,6 +600,7 @@ export default function UploadExpensePage() {
             messages={messages}
             isTyping={isTyping}
             isProcessingFiles={isProcessingFiles}
+            isLoading={isLoading}
           />
 
           <ChatInput

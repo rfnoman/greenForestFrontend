@@ -49,6 +49,7 @@ export function useChat(token: string | null, businessId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [processingFiles, setProcessingFiles] = useState<FileProcessingResult[]>([]);
   const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const wsRef = useRef<WebSocket | null>(null);
   const currentResponseRef = useRef("");
@@ -102,6 +103,7 @@ export function useChat(token: string | null, businessId: string | null) {
         reconnectAttemptsRef.current = 0;
         // Load sessions on connect
         ws.send(JSON.stringify({ type: "list_sessions" }));
+        setIsLoading(false);
       };
 
       ws.onclose = (event) => {
@@ -245,6 +247,7 @@ export function useChat(token: string | null, businessId: string | null) {
               setSessionId(data.session_id);
             }
             setProcessingFiles([]);
+            setIsLoading(false);
             break;
 
           case "sessions_list":
@@ -329,6 +332,7 @@ export function useChat(token: string | null, businessId: string | null) {
   const loadSession = useCallback((id: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
+    setIsLoading(true);
     setSessionId(id);
     wsRef.current.send(
       JSON.stringify({
@@ -370,6 +374,7 @@ export function useChat(token: string | null, businessId: string | null) {
     error,
     processingFiles,
     isProcessingFiles,
+    isLoading,
     sendMessage,
     loadSession,
     newSession,
