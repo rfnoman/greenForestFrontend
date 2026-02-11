@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/hooks/use-auth";
+import { apiClient } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 import { loginSchema, LoginFormData } from "@/lib/utils/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +27,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-export default function LoginPage() {
-  const { login } = useAuth();
+const ACCESS_TOKEN_KEY = "greenforest_accountant_access_token";
+const REFRESH_TOKEN_KEY = "greenforest_accountant_refresh_token";
+const ROLE_ID_KEY = "greenforest_role_id";
+
+export default function AccountantLoginPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
@@ -40,9 +46,34 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
-      toast.success("Welcome back!");
+      const { access, refresh, role_id } = await authApi.login({ email: data.email, password: data.password });
+
+      // Temporarily set token to fetch user data
+      apiClient.setAccessToken(access);
+      const userData = await authApi.getMe();
+
+      // Allow both accountant and accountant_supervisor to login
+      if (userData.user_type !== 'accountant' && userData.user_type !== 'accountant_supervisor') {
+        apiClient.setAccessToken(null);
+        throw new Error('Access denied. Only accountants and supervisors can login to this portal.');
+      }
+
+      // Store tokens with appropriate keys based on user type
+      if (userData.user_type === 'accountant_supervisor') {
+        localStorage.setItem("greenforest_supervisor_access_token", access);
+        localStorage.setItem("greenforest_supervisor_refresh_token", refresh);
+        localStorage.setItem("greenforest_supervisor_role_id", role_id);
+        toast.success("Welcome back, Supervisor!");
+        router.push("/accountant-supervisor/dashboard");
+      } else {
+        localStorage.setItem(ACCESS_TOKEN_KEY, access);
+        localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+        localStorage.setItem(ROLE_ID_KEY, role_id);
+        toast.success("Welcome back, Accountant!");
+        router.push("/accountant/dashboard");
+      }
     } catch (error) {
+      apiClient.setAccessToken(null);
       if (error instanceof Error && error.message.includes('Access denied')) {
         toast.error(error.message);
       } else {
@@ -62,9 +93,9 @@ export default function LoginPage() {
             <span className="text-2xl font-bold">GreenForest</span>
           </div>
         </div>
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
+        <CardTitle className="text-2xl">Accountant Portal</CardTitle>
         <CardDescription>
-          Enter your email and password to sign in
+          Sign in to access your dashboard
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -79,7 +110,7 @@ export default function LoginPage() {
                   <FormControl>
                     <Input
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder="accountant@example.com"
                       {...field}
                     />
                   </FormControl>

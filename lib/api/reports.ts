@@ -9,24 +9,33 @@ import type {
   BillAgingReport,
 } from "@/lib/types";
 
+export interface DateRangeParams {
+  start_date: string;
+  end_date: string;
+}
+
+export interface AsOfDateParams {
+  as_of_date: string;
+}
+
 export const reportsApi = {
   getDashboard: () => apiClient.get<DashboardData>("/reports/dashboard"),
 
-  getProfitLoss: (startDate: string, endDate: string) =>
+  getProfitLoss: (params: DateRangeParams) =>
     apiClient.get<ProfitLossReport>("/reports/profit-loss", {
-      start_date: startDate,
-      end_date: endDate,
+      start_date: params.start_date,
+      end_date: params.end_date,
     }),
 
-  getBalanceSheet: (asOfDate: string) =>
+  getBalanceSheet: (params: AsOfDateParams) =>
     apiClient.get<BalanceSheetReport>("/reports/balance-sheet", {
-      as_of_date: asOfDate,
+      as_of_date: params.as_of_date,
     }),
 
-  getCashFlow: (startDate: string, endDate: string) =>
+  getCashFlow: (params: DateRangeParams) =>
     apiClient.get<CashFlowReport>("/reports/cash-flow", {
-      start_date: startDate,
-      end_date: endDate,
+      start_date: params.start_date,
+      end_date: params.end_date,
     }),
 
   getTrialBalance: () => apiClient.get<TrialBalance>("/reports/trial-balance"),

@@ -9,6 +9,7 @@ import { journalEntriesApi } from "@/lib/api/journal-entries";
 import { JOURNAL_ENTRY_STATUSES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { useBusiness } from "@/lib/hooks/use-business";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +23,9 @@ import { toast } from "sonner";
 export default function JournalEntriesPage() {
   const [selectedStatus, setSelectedStatus] = useState<JournalEntryStatus | "all">("all");
   const { currentBusiness } = useBusiness();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const canPostJournal = user?.user_type === "accountant_supervisor";
   const { data: entries, isLoading } = useQuery({
     queryKey: ["journal-entries", selectedStatus === "all" ? {} : { status: selectedStatus }],
     queryFn: () => journalEntriesApi.list(selectedStatus === "all" ? undefined : { status: selectedStatus }),
@@ -100,7 +103,7 @@ export default function JournalEntriesPage() {
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild><Link href={`/journal-entries/${entry.id}`}><Eye className="h-4 w-4 mr-2" />View</Link></DropdownMenuItem>
-              {entry.status === "draft" && (
+              {entry.status === "draft" && canPostJournal && (
                 <DropdownMenuItem onClick={() => handlePost(entry)}><CheckCircle className="h-4 w-4 mr-2" />Post</DropdownMenuItem>
               )}
               {entry.status === "posted" && (

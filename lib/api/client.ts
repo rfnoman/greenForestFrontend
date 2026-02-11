@@ -18,6 +18,7 @@ interface RequestOptions extends RequestInit {
 class ApiClient {
   private accessToken: string | null = null;
   private businessId: string | null = null;
+  private roleId: string | null = null;
 
   setAccessToken(token: string | null) {
     this.accessToken = token;
@@ -33,6 +34,14 @@ class ApiClient {
 
   getBusinessId(): string | null {
     return this.businessId;
+  }
+
+  setRoleId(id: string | null) {
+    this.roleId = id;
+  }
+
+  getRoleId(): string | null {
+    return this.roleId;
   }
 
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -55,6 +64,10 @@ class ApiClient {
 
     if (this.businessId) {
       (headers as Record<string, string>)["X-Business-ID"] = this.businessId;
+    }
+
+    if (this.roleId) {
+      (headers as Record<string, string>)["X-Role"] = this.roleId;
     }
 
     const response = await fetch(url, { ...fetchOptions, headers });

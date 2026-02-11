@@ -2,10 +2,11 @@
 export interface TokenResponse {
   access: string;
   refresh: string;
+  role_id: string;
 }
 
 // User
-export type UserType = 'owner' | 'manager' | 'accountant';
+export type UserType = 'owner' | 'manager' | 'accountant' | 'accountant_supervisor';
 
 export interface User {
   id: string;
@@ -206,6 +207,12 @@ export interface JournalEntryLine {
   line_order: number;
 }
 
+export interface JournalEntryContact {
+  id: string;
+  name: string;
+  type: ContactType;
+}
+
 export interface JournalEntry {
   id: string;
   entry_number: string;
@@ -217,8 +224,18 @@ export interface JournalEntry {
   posted_at: string | null;
   voided_at: string | null;
   void_reason: string | null;
+  contact: JournalEntryContact | null;
   lines: JournalEntryLine[];
   created_at: string;
+}
+
+// Journal Entry with Business Context (for supervisor views)
+export interface JournalEntryWithBusiness extends JournalEntry {
+  business_id: string;
+  business_name: string;
+  owner_id: string;
+  owner_name: string;
+  owner_email: string;
 }
 
 // Bank Account
@@ -531,4 +548,66 @@ export interface StartReconciliationInput {
   bank_account_id: string;
   statement_date: string;
   statement_balance: string;
+  transaction_ids?: string[];
+}
+
+// Chat File Types
+export type ChatFileType = 'image' | 'pdf';
+export type ChatFileProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface ExtractedReceiptItem {
+  description: string;
+  quantity: number;
+  amount: string;
+}
+
+export interface ExtractedReceiptData {
+  vendor: string | null;
+  date: string | null;
+  total: string | null;
+  tax: string | null;
+  subtotal: string | null;
+  items: ExtractedReceiptItem[];
+  payment_method: string | null;
+  currency: string | null;
+  category_suggestion: string | null;
+  confidence: number | null;
+}
+
+export interface ChatAttachment {
+  id: string;
+  original_filename: string;
+  file_type: ChatFileType;
+  mime_type: string;
+  file_size: number;
+  processing_status: ChatFileProcessingStatus;
+  extracted_data: ExtractedReceiptData;
+  journal_entry_id: string | null;
+  created_at: string;
+}
+
+export interface ChatAttachmentUploadResponse {
+  id: string;
+  original_filename: string;
+  file_type: ChatFileType;
+  processing_status: ChatFileProcessingStatus;
+  message: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ChatSessionDetail extends ChatSession {
+  messages: ChatMessage[];
 }

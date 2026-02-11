@@ -31,16 +31,16 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Upload", href: "/upload", icon: Upload, allowedUserTypes: ["owner", "manager"] },
-  { name: "Accounts", href: "/accounts", icon: BookOpen, allowedUserTypes: ["accountant"] },
-  { name: "Contacts", href: "/contacts", icon: Users, allowedUserTypes: ["accountant"] },
-  { name: "Invoices", href: "/invoices", icon: FileText, allowedUserTypes: ["accountant"] },
-  { name: "Bills", href: "/bills", icon: Receipt, allowedUserTypes: ["accountant"] },
-  { name: "Expenses", href: "/expenses", icon: CreditCard, allowedUserTypes: ["accountant"] },
-  { name: "Journal Entries", href: "/journal-entries", icon: FileSpreadsheet, allowedUserTypes: ["accountant"] },
-  { name: "Banking", href: "/banking/accounts", icon: Landmark, allowedUserTypes: ["accountant"] },
-  { name: "Reports", href: "/reports", icon: BarChart3, allowedUserTypes: ["accountant"] },
-  { name: "Settings", href: "/settings", icon: Settings, allowedUserTypes: ["accountant"] },
+  { name: "Book keeper", href: "/book-keeper", icon: Upload, allowedUserTypes: ["owner", "manager"] },
+  { name: "Accounts", href: "/accounts", icon: BookOpen, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Contacts", href: "/contacts", icon: Users, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Invoices", href: "/invoices", icon: FileText, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Bills", href: "/bills", icon: Receipt, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Expenses", href: "/expenses", icon: CreditCard, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Journal Entries", href: "/journal-entries", icon: FileSpreadsheet, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Banking", href: "/banking/accounts", icon: Landmark, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Reports", href: "/reports", icon: BarChart3, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
+  { name: "Settings", href: "/settings", icon: Settings, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
 ];
 
 export function Sidebar() {
@@ -67,7 +67,8 @@ export function Sidebar() {
               <span className="text-xs font-normal text-muted-foreground">
                 {user?.user_type === 'owner' && 'Owner'}
                 {user?.user_type === 'manager' && 'Manager'}
-                {user?.user_type === 'accountant' && 'Accountant Admin'}
+                {user?.user_type === 'accountant' && 'Accountant'}
+                {user?.user_type === 'accountant_supervisor' && 'Accountant Supervisor'}
               </span>
             </div>
           </Link>
@@ -79,7 +80,7 @@ export function Sidebar() {
               const isActive =
                 item.href === "/"
                   ? pathname === "/"
-                  : pathname.startsWith(item.href);
+                  : pathname === item.href || pathname.startsWith(item.href + "/");
 
               return (
                 <Link

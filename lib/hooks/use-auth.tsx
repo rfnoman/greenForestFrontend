@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  accessToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -19,22 +20,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ACCESS_TOKEN_KEY = "greenforest_access_token";
 const REFRESH_TOKEN_KEY = "greenforest_refresh_token";
+const ROLE_ID_KEY = "greenforest_role_id";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const router = useRouter();
 
   const clearAuth = useCallback(() => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(ROLE_ID_KEY);
+    localStorage.removeItem("greenforest_impersonated");
     apiClient.setAccessToken(null);
+    apiClient.setRoleId(null);
     setUser(null);
+    setAccessToken(null);
   }, []);
 
   const refreshUser = useCallback(async () => {
     try {
       const userData = await authApi.getMe();
+      // Only allow owner and manager
+      // if (userData.user_type === 'accountant') {
+      //   clearAuth();
+      //   return;
+      // }
       setUser(userData);
     } catch {
       clearAuth();
@@ -43,9 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-      if (accessToken) {
-        apiClient.setAccessToken(accessToken);
+      const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const roleId = localStorage.getItem(ROLE_ID_KEY);
+      if (storedToken) {
+        apiClient.setAccessToken(storedToken);
+        setAccessToken(storedToken);
+        if (roleId) {
+          apiClient.setRoleId(roleId);
+        }
         try {
           await refreshUser();
         } catch {
@@ -55,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const { access } = await authApi.refresh(refreshToken);
               localStorage.setItem(ACCESS_TOKEN_KEY, access);
               apiClient.setAccessToken(access);
+              setAccessToken(access);
               await refreshUser();
             } catch {
               clearAuth();
@@ -69,11 +87,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshUser, clearAuth]);
 
   const login = async (email: string, password: string) => {
-    const { access, refresh } = await authApi.login({ email, password });
+    const { access, refresh, role_id } = await authApi.login({ email, password });
     localStorage.setItem(ACCESS_TOKEN_KEY, access);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+    localStorage.setItem(ROLE_ID_KEY, role_id);
     apiClient.setAccessToken(access);
-    await refreshUser();
+    apiClient.setRoleId(role_id);
+    setAccessToken(access);
+
+    // Fetch user data to check user type
+    const userData = await authApi.getMe();
+
+    // Only allow owner and manager to login
+    if (userData.user_type === 'accountant') {
+      clearAuth();
+      throw new Error('Access denied. Only owners and managers can login to this portal.');
+    }
+
+    setUser(userData);
     router.push("/");
   };
 
@@ -96,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        accessToken,
         login,
         logout,
         refreshUser,
