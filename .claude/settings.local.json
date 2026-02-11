@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx create-next-app@latest:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm info next versions --json)"
     ]
   }
 }
