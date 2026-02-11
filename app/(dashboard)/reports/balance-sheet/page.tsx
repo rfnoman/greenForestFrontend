@@ -28,7 +28,7 @@ export default function BalanceSheetPage() {
 
   const { data: report, isLoading } = useQuery({
     queryKey: ["reports", "balance-sheet", asOfDate],
-    queryFn: () => reportsApi.getBalanceSheet(asOfDate),
+    queryFn: () => reportsApi.getBalanceSheet({ as_of_date: asOfDate }),
   });
 
   const totalAssets = parseFloat(report?.assets?.total || "0");

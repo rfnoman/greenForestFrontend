@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { Business, BusinessMember } from "@/lib/types";
+import type { Business, BusinessMember, Address } from "@/lib/types";
 
 export interface CreateBusinessInput {
   name: string;
@@ -9,6 +9,7 @@ export interface CreateBusinessInput {
   email?: string;
   phone?: string;
   tax_id?: string;
+  address?: Address;
 }
 
 export interface InviteMemberInput {

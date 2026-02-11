@@ -548,6 +548,7 @@ export interface StartReconciliationInput {
   bank_account_id: string;
   statement_date: string;
   statement_balance: string;
+  transaction_ids?: string[];
 }
 
 // Chat File Types

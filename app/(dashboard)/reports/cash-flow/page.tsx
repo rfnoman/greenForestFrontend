@@ -39,7 +39,7 @@ export default function CashFlowPage() {
 
   const { data: report, isLoading } = useQuery({
     queryKey: ["reports", "cash-flow", startDate, endDate],
-    queryFn: () => reportsApi.getCashFlow(startDate, endDate),
+    queryFn: () => reportsApi.getCashFlow({ start_date: startDate, end_date: endDate }),
   });
 
   const operatingCash = parseFloat(report?.operating?.net || "0");

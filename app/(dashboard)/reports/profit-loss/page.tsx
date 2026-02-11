@@ -33,7 +33,7 @@ export default function ProfitLossPage() {
 
   const { data: report, isLoading } = useQuery({
     queryKey: ["reports", "profit-loss", startDate, endDate],
-    queryFn: () => reportsApi.getProfitLoss(startDate, endDate),
+    queryFn: () => reportsApi.getProfitLoss({ start_date: startDate, end_date: endDate }),
   });
 
   const totalRevenue = parseFloat(report?.revenue?.total || "0");
