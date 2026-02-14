@@ -14,7 +14,7 @@ export interface CreateBusinessInput {
 
 export interface InviteMemberInput {
   email: string;
-  role: "admin" | "member" | "viewer";
+  role: "owner" | "manager";
 }
 
 export const businessesApi = {
@@ -29,8 +29,8 @@ export const businessesApi = {
 
   getMembers: (id: string) => apiClient.get<BusinessMember[]>(`/businesses/${id}/members`),
 
-  inviteMember: (id: string, email: string, role: "admin" | "member" | "viewer") =>
-    apiClient.post<BusinessMember>(`/businesses/${id}/members/invite`, { email, role }),
+  inviteMember: (id: string, email: string, role: "owner" | "manager") =>
+    apiClient.post<BusinessMember>(`/businesses/${id}/members/invite/`, { email, role }),
 
   removeMember: (businessId: string, userId: string) =>
     apiClient.delete(`/businesses/${businessId}/members/${userId}`),

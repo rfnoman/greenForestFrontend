@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { authApi } from "@/lib/api/auth";
 import type { User, RegisterInput } from "@/lib/types";
@@ -28,14 +29,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const clearAuth = useCallback(() => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(ROLE_ID_KEY);
-    localStorage.removeItem("greenforest_impersonated");
+    // Clear all greenforest keys from localStorage
+    const keysToRemove = Object.keys(localStorage).filter((key) =>
+      key.startsWith("greenforest_")
+    );
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
     apiClient.setAccessToken(null);
     apiClient.setRoleId(null);
+    apiClient.setBusinessId(null);
     setUser(null);
     setAccessToken(null);
   }, []);
@@ -88,6 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshUser, clearAuth]);
 
   const login = async (email: string, password: string) => {
+    // Clear any previous session data before logging in
+    clearAuth();
+    queryClient.clear();
+
     const { access, refresh, role_id } = await authApi.login({ email, password });
     localStorage.setItem(ACCESS_TOKEN_KEY, access);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
@@ -110,6 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (data: RegisterInput) => {
+    // Clear any previous session data before registering
+    clearAuth();
+    queryClient.clear();
+
     const { access, refresh, user: userData } = await authApi.register(data);
     localStorage.setItem(ACCESS_TOKEN_KEY, access);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
@@ -131,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     clearAuth();
+    queryClient.clear();
     router.push("/login");
   };
 

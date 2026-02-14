@@ -66,25 +66,22 @@ import type { BusinessMember } from "@/lib/types";
 
 const inviteSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  role: z.enum(["admin", "member", "viewer"]),
+  role: z.enum(["owner", "manager"]),
 });
 
 type InviteFormData = z.infer<typeof inviteSchema>;
 
 const ROLES = [
-  { value: "admin", label: "Admin", description: "Full access to all features" },
-  { value: "member", label: "Member", description: "Can create and edit transactions" },
-  { value: "viewer", label: "Viewer", description: "Read-only access" },
+  { value: "owner", label: "Owner", description: "Full access to all features and settings" },
+  { value: "manager", label: "Manager", description: "Can manage transactions and operations" },
 ];
 
 const getRoleBadgeVariant = (role: string) => {
   switch (role) {
     case "owner":
       return "default";
-    case "admin":
+    case "manager":
       return "secondary";
-    case "member":
-      return "outline";
     default:
       return "outline";
   }
@@ -106,7 +103,7 @@ export default function MembersPage() {
     resolver: zodResolver(inviteSchema),
     defaultValues: {
       email: "",
-      role: "member",
+      role: "manager",
     },
   });
 
@@ -258,10 +255,8 @@ export default function MembersPage() {
         <CardContent>
           <div className="space-y-4">
             {[
-              { role: "Owner", permissions: "Full access. Can delete business and manage billing." },
-              { role: "Admin", permissions: "Full access except deleting business and billing." },
-              { role: "Member", permissions: "Can create and edit transactions, invoices, bills, and contacts." },
-              { role: "Viewer", permissions: "Read-only access to all data. Cannot make changes." },
+              { role: "Owner", permissions: "Full access to all features and settings." },
+              { role: "Manager", permissions: "Can manage transactions and operations." },
             ].map((item) => (
               <div key={item.role} className="flex gap-4 py-2 border-b last:border-0">
                 <Badge variant="outline" className="w-20 justify-center">

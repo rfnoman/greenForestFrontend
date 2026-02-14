@@ -68,6 +68,22 @@ export const expenseSchema = z.object({
   receipt_url: z.string().url().optional().or(z.literal("")),
 });
 
+export const incomeSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  amount: z.string().refine((v) => parseFloat(v) > 0, "Amount must be positive"),
+  income_type: z.string().min(1, "Please select an income type"),
+  category_id: z.string().uuid("Please select a category"),
+  payment_method: z.enum(["bank", "cash"]),
+  bank_account_id: z.string().uuid("Please select a bank account").optional().or(z.literal("")),
+  description: z.string().min(1, "Description is required"),
+  contact_id: z.string().uuid().optional().or(z.literal("")),
+  reference: z.string().optional(),
+  receipt_url: z.string().url().optional().or(z.literal("")),
+}).refine(
+  (data) => data.payment_method !== "bank" || (data.bank_account_id && data.bank_account_id !== ""),
+  { message: "Please select a bank account", path: ["bank_account_id"] }
+);
+
 export const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email().optional().or(z.literal("")),
@@ -191,6 +207,7 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 export type InvoiceFormData = z.infer<typeof invoiceSchema>;
 export type BillFormData = z.infer<typeof billSchema>;
 export type ExpenseFormData = z.infer<typeof expenseSchema>;
+export type IncomeFormData = z.infer<typeof incomeSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
 export type AccountFormData = z.infer<typeof accountSchema>;
 export type JournalEntryFormData = z.infer<typeof journalEntrySchema>;
