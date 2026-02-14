@@ -50,6 +50,18 @@ export const BANK_ACCOUNT_TYPES = [
   { value: "other", label: "Other" },
 ] as const;
 
+export const INCOME_TYPES = [
+  { value: "interest", label: "Interest Income" },
+  { value: "rental", label: "Rental Income" },
+  { value: "dividend", label: "Dividend Income" },
+  { value: "gain_on_disposal", label: "Gain on Asset Disposal" },
+  { value: "fx_gain", label: "Foreign Exchange Gain" },
+  { value: "grant", label: "Government Grant/Subsidy" },
+  { value: "insurance", label: "Insurance Proceeds" },
+  { value: "refund", label: "Refund/Rebate" },
+  { value: "other", label: "Other Income" },
+] as const;
+
 export const FISCAL_MONTHS = [
   { value: 1, label: "January" },
   { value: 2, label: "February" },

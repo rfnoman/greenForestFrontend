@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, ChevronRight, ChevronDown } from "lucide-react";
 import { useAccounts } from "@/lib/hooks/use-accounts";
 import { ACCOUNT_TYPES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,52 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountFormDialog } from "@/components/forms/account-form";
 import type { Account, AccountType } from "@/lib/types";
+
+interface AccountTreeNode extends Account {
+  children: AccountTreeNode[];
+  depth: number;
+}
+
+function buildAccountTree(accounts: Account[]): AccountTreeNode[] {
+  const accountMap = new Map<string, AccountTreeNode>();
+  const roots: AccountTreeNode[] = [];
+
+  // Create tree nodes
+  for (const account of accounts) {
+    accountMap.set(account.id, { ...account, children: [], depth: 0 });
+  }
+
+  // Build tree
+  for (const account of accounts) {
+    const node = accountMap.get(account.id)!;
+    if (account.parent_id && accountMap.has(account.parent_id)) {
+      const parent = accountMap.get(account.parent_id)!;
+      parent.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  // Set depths
+  function setDepth(nodes: AccountTreeNode[], depth: number) {
+    for (const node of nodes) {
+      node.depth = depth;
+      setDepth(node.children, depth + 1);
+    }
+  }
+  setDepth(roots, 0);
+
+  // Sort by code at each level
+  function sortNodes(nodes: AccountTreeNode[]) {
+    nodes.sort((a, b) => a.code.localeCompare(b.code));
+    for (const node of nodes) {
+      sortNodes(node.children);
+    }
+  }
+  sortNodes(roots);
+
+  return roots;
+}
 
 export default function AccountsPage() {
   const { data: accounts, isLoading } = useAccounts();
@@ -106,44 +152,92 @@ export default function AccountsPage() {
 }
 
 function AccountList({ accounts }: { accounts: Account[] }) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const tree = useMemo(() => buildAccountTree(accounts), [accounts]);
+
   if (accounts.length === 0) {
     return (
       <p className="text-muted-foreground text-center py-8">No accounts found</p>
     );
   }
 
-  return (
-    <div className="space-y-2">
-      {accounts.map((account) => (
-        <a
-          key={account.id}
-          href={`/accounts/${account.id}`}
+  function toggleCollapse(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function renderNode(node: AccountTreeNode) {
+    const hasChildren = node.children.length > 0;
+    const isCollapsed = collapsed.has(node.id);
+
+    return (
+      <div key={node.id}>
+        <div
           className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+          style={{ marginLeft: node.depth * 24 }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {hasChildren ? (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  toggleCollapse(node.id);
+                }}
+                className="p-0.5 rounded hover:bg-muted"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            ) : (
+              <span className="w-5" />
+            )}
             <div className="font-mono text-sm text-muted-foreground w-16">
-              {account.code}
+              {node.code}
             </div>
-            <div>
-              <div className="font-medium">{account.name}</div>
-              {account.description && (
+            <a href={`/accounts/${node.id}`} className="hover:underline">
+              <div className="font-medium">{node.name}</div>
+              {node.description && (
                 <div className="text-sm text-muted-foreground">
-                  {account.description}
+                  {node.description}
                 </div>
               )}
-            </div>
+            </a>
           </div>
           <div className="flex items-center gap-2">
-            {account.is_system && (
+            {node.is_system && (
               <Badge variant="secondary">System</Badge>
             )}
-            {!account.is_active && (
+            {!node.is_active && (
               <Badge variant="outline">Inactive</Badge>
             )}
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <a href={`/accounts/${node.id}`}>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </a>
           </div>
-        </a>
-      ))}
+        </div>
+        {hasChildren && !isCollapsed && (
+          <div className="mt-1 space-y-1">
+            {node.children.map((child) => renderNode(child))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {tree.map((node) => renderNode(node))}
     </div>
   );
 }

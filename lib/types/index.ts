@@ -176,6 +176,26 @@ export interface Bill {
   created_at: string;
 }
 
+// Income
+export type IncomeType = 'interest' | 'rental' | 'dividend' | 'gain_on_disposal' | 'fx_gain' | 'grant' | 'insurance' | 'refund' | 'other';
+
+export interface Income {
+  id: string;
+  date: string;
+  amount: string;
+  income_type: IncomeType;
+  category_id: string;
+  category_name: string;
+  contact_id: string | null;
+  contact_name: string | null;
+  bank_account_id: string | null;
+  description: string;
+  reference: string | null;
+  receipt_url: string | null;
+  receipt_file_url: string | null;
+  created_at: string;
+}
+
 // Expense
 export interface Expense {
   id: string;
@@ -480,6 +500,18 @@ export interface CreateBillLineItem {
   account_id: string;
   description: string;
   amount: string;
+}
+
+export interface CreateIncomeInput {
+  date: string;
+  amount: string;
+  income_type?: string;
+  category_id: string;
+  bank_account_id?: string;
+  description: string;
+  contact_id?: string;
+  reference?: string;
+  receipt_url?: string;
 }
 
 export interface CreateExpenseInput {
