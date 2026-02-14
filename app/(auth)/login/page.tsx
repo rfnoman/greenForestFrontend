@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { loginSchema, LoginFormData } from "@/lib/utils/validation";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,12 @@ export default function LoginPage() {
             </Button>
           </form>
         </Form>
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-primary underline-offset-4 hover:underline">
+            Sign up
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );
