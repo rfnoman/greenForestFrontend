@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { TokenResponse, User } from "@/lib/types";
+import type { TokenResponse, User, RegisterInput, RegisterResponse } from "@/lib/types";
 
 export interface LoginInput {
   email: string;
@@ -8,6 +8,8 @@ export interface LoginInput {
 
 export const authApi = {
   login: (data: LoginInput) => apiClient.post<TokenResponse>("/auth/token", data),
+
+  register: (data: RegisterInput) => apiClient.post<RegisterResponse>("/auth/register", data),
 
   refresh: (refreshToken: string) =>
     apiClient.post<{ access: string }>("/auth/token/refresh/", { refresh: refreshToken }),

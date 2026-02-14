@@ -434,6 +434,20 @@ export interface LoginInput {
   password: string;
 }
 
+export interface RegisterInput {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  user_type: 'owner' | 'manager';
+}
+
+export interface RegisterResponse {
+  access: string;
+  refresh: string;
+  user: User;
+}
+
 export interface CreateInvoiceInput {
   customer_id: string;
   issue_date: string;

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
 import { authApi } from "@/lib/api/auth";
-import type { User } from "@/lib/types";
+import type { User, RegisterInput } from "@/lib/types";
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   accessToken: string | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -108,6 +109,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/");
   };
 
+  const register = async (data: RegisterInput) => {
+    const { access, refresh, user: userData } = await authApi.register(data);
+    localStorage.setItem(ACCESS_TOKEN_KEY, access);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+    localStorage.setItem(ROLE_ID_KEY, userData.id);
+    apiClient.setAccessToken(access);
+    apiClient.setRoleId(userData.id);
+    setAccessToken(access);
+    setUser(userData);
+    router.push("/");
+  };
+
   const logout = async () => {
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     if (refreshToken) {
@@ -129,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         accessToken,
         login,
+        register,
         logout,
         refreshUser,
       }}
