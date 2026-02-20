@@ -206,6 +206,7 @@ export function useChat(token: string | null, businessId: string | null) {
           case "response_start":
             setIsTyping(true);
             setIsProcessingFiles(false);
+            currentResponseRef.current = "";
             setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
             break;
 
@@ -300,7 +301,7 @@ export function useChat(token: string | null, businessId: string | null) {
     };
   }, [token, businessId]);
 
-  const sendMessage = useCallback((content: string, fileIds?: string[]) => {
+  const sendMessage = useCallback((content: string, fileIds?: string[], documentType?: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       setError("Not connected to chat server");
       return;
@@ -324,6 +325,7 @@ export function useChat(token: string | null, businessId: string | null) {
         type: messageType,
         message: content,
         ...(fileIds && fileIds.length > 0 && { file_ids: fileIds }),
+        ...(documentType && { document_type: documentType }),
         session_id: sessionId,
       })
     );

@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, ExternalLink } from "lucide-react";
 import type { JournalEntryWithBusiness } from "@/lib/types";
 import { useRouter } from "next/navigation";
 
@@ -29,6 +29,7 @@ interface JournalEntryQuickViewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPost: () => void;
+  onAskForReview?: () => void;
 }
 
 export function JournalEntryQuickView({
@@ -36,6 +37,7 @@ export function JournalEntryQuickView({
   open,
   onOpenChange,
   onPost,
+  onAskForReview,
 }: JournalEntryQuickViewProps) {
   const router = useRouter();
 
@@ -89,21 +91,12 @@ export function JournalEntryQuickView({
             </div>
           </div>
 
-          {/* Business & Owner Information */}
+          {/* Business Information */}
           <div>
             <h4 className="text-sm font-semibold mb-3">Business Information</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Business:</span>
-                <div className="font-medium">{entry.business_name}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Owner:</span>
-                <div className="font-medium">{entry.owner_name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {entry.owner_email}
-                </div>
-              </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Business:</span>
+              <div className="font-medium">{entry.business_name}</div>
             </div>
           </div>
 
@@ -186,6 +179,12 @@ export function JournalEntryQuickView({
             <ExternalLink className="h-4 w-4 mr-2" />
             View Full Details
           </Button>
+          {onAskForReview && entry.status === "draft" && (
+            <Button variant="outline" onClick={onAskForReview}>
+              <ClipboardCheck className="h-4 w-4 mr-2" />
+              Ask for Review
+            </Button>
+          )}
           <Button onClick={onPost}>
             <CheckCircle2 className="h-4 w-4 mr-2" />
             Post Entry

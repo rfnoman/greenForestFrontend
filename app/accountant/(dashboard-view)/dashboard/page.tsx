@@ -1,222 +1,138 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Leaf, LogOut, Users, Search } from "lucide-react";
-import { toast } from "sonner";
-import { apiClient } from "@/lib/api/client";
-import { authApi } from "@/lib/api/auth";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import type { User } from "@/lib/types";
+import { FileSpreadsheet, CheckCircle2, Clock, Users } from "lucide-react";
+import { useAccountantAuth } from "@/lib/hooks/use-accountant-auth";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from "recharts";
 
-const ACCESS_TOKEN_KEY = "greenforest_accountant_access_token";
-const REFRESH_TOKEN_KEY = "greenforest_accountant_refresh_token";
-const ROLE_ID_KEY = "greenforest_role_id";
+const monthlyData = [
+  { month: "Jan", posted: 40, pending: 8 },
+  { month: "Feb", posted: 48, pending: 5 },
+  { month: "Mar", posted: 35, pending: 10 },
+  { month: "Apr", posted: 58, pending: 4 },
+  { month: "May", posted: 50, pending: 7 },
+  { month: "Jun", posted: 44, pending: 9 },
+];
+
+const weeklyData = [
+  { day: "Mon", entries: 6 },
+  { day: "Tue", entries: 10 },
+  { day: "Wed", entries: 5 },
+  { day: "Thu", entries: 13 },
+  { day: "Fri", entries: 8 },
+  { day: "Sat", entries: 2 },
+  { day: "Sun", entries: 1 },
+];
 
 export default function AccountantDashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [owners, setOwners] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    const initAuth = async () => {
-      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-      const roleId = localStorage.getItem(ROLE_ID_KEY);
-      if (!accessToken) {
-        router.push("/accountant/login");
-        return;
-      }
-
-      apiClient.setAccessToken(accessToken);
-      if (roleId) {
-        apiClient.setRoleId(roleId);
-      }
-      try {
-        const userData = await authApi.getMe();
-        if (userData.user_type !== 'accountant') {
-          localStorage.removeItem(ACCESS_TOKEN_KEY);
-          localStorage.removeItem(REFRESH_TOKEN_KEY);
-          localStorage.removeItem(ROLE_ID_KEY);
-          router.push("/accountant/login");
-          return;
-        }
-        setUser(userData);
-
-        // Fetch owners list
-        const ownersList = await apiClient.get<User[]>("/users/owners");
-        setOwners(ownersList);
-      } catch {
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-        localStorage.removeItem(ROLE_ID_KEY);
-        router.push("/accountant/login");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initAuth();
-  }, [router]);
-
-  const handleLogout = async () => {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (refreshToken) {
-      try {
-        await authApi.logout(refreshToken);
-      } catch {
-        // Ignore logout errors
-      }
-    }
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(ROLE_ID_KEY);
-    apiClient.setAccessToken(null);
-    apiClient.setRoleId(null);
-    router.push("/accountant/login");
-  };
-
-  const handleImpersonate = async (ownerEmail: string) => {
-    try {
-      const response = await apiClient.post<{ access: string; refresh: string; user: User; role_id?: string }>(
-        "/users/impersonate",
-        { email: ownerEmail }
-      );
-
-      // Store impersonated user's tokens in the main app's storage
-      localStorage.setItem("greenforest_access_token", response.access);
-      localStorage.setItem("greenforest_refresh_token", response.refresh);
-      // Preserve the accountant's role_id so X-Role header continues to be sent
-      // This ensures the API returns user_type: 'accountant' for the impersonated session
-      const accountantRoleId = localStorage.getItem(ROLE_ID_KEY);
-      if (accountantRoleId) {
-        localStorage.setItem("greenforest_role_id", accountantRoleId);
-      }
-      // Set flag to indicate this is an impersonated session
-      localStorage.setItem("greenforest_impersonated", "true");
-
-      toast.success(`Now viewing as ${response.user.email}`);
-
-      // Redirect to main dashboard
-      window.location.href = "/";
-    } catch {
-      toast.error("Failed to impersonate user");
-    }
-  };
-
-  // Filter owners based on search query
-  const filteredOwners = owners.filter((owner) => {
-    const searchLower = searchQuery.toLowerCase();
-    const fullName = `${owner.first_name || ""} ${owner.last_name || ""}`.toLowerCase();
-    const username = (owner.username || "").toLowerCase();
-    const email = owner.email.toLowerCase();
-
-    return (
-      fullName.includes(searchLower) ||
-      username.includes(searchLower) ||
-      email.includes(searchLower)
-    );
-  });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const { user, owners } = useAccountantAuth();
 
   return (
-    <div className="min-h-screen bg-muted/40">
-      {/* Header */}
-      <header className="border-b bg-background">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-6 w-6 text-primary" />
-            <div className="flex flex-col">
-              <span className="font-semibold">GreenForest</span>
-              <span className="text-xs text-muted-foreground">Accountant Admin</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">
+          Welcome back, {user?.first_name || user?.username || "User"}
+        </h1>
+        <p className="text-muted-foreground">Here&apos;s your activity overview</p>
+      </div>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">Accountant Dashboard</h1>
-          <p className="text-muted-foreground">Select a client to manage their account</p>
-        </div>
-
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Client Accounts
-            </CardTitle>
-            <CardDescription>
-              Click on a client to access their dashboard
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Entries Posted</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {/* Search Field */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search clients by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {owners.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No client accounts found</p>
-            ) : filteredOwners.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No clients match your search</p>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredOwners.map((owner) => (
-                  <Card
-                    key={owner.id}
-                    className="cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => handleImpersonate(owner.email)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary font-semibold">
-                            {owner.first_name?.[0] || owner.email[0].toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {owner.first_name && owner.last_name
-                              ? `${owner.first_name} ${owner.last_name}`
-                              : owner.username || owner.email}
-                          </p>
-                          <p className="text-sm text-muted-foreground truncate">{owner.email}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <div className="text-2xl font-bold">275</div>
+            <p className="text-xs text-muted-foreground">+8% from last month</p>
           </CardContent>
         </Card>
-      </main>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Post</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">9</div>
+            <p className="text-xs text-muted-foreground">Across all businesses</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{owners.length}</div>
+            <p className="text-xs text-muted-foreground">Active client accounts</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This Week</CardTitle>
+            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">45</div>
+            <p className="text-xs text-muted-foreground">Entries posted</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Post Activity</CardTitle>
+            <CardDescription>Entries posted vs pending per month</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="posted" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="pending" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly Entries</CardTitle>
+            <CardDescription>Entries posted this week</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="entries"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

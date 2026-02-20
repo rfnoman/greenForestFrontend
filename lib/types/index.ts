@@ -249,13 +249,11 @@ export interface JournalEntry {
   created_at: string;
 }
 
-// Journal Entry with Business Context (for supervisor views)
+// Journal Entry with Business Context (for accountant/supervisor views)
 export interface JournalEntryWithBusiness extends JournalEntry {
   business_id: string;
   business_name: string;
-  owner_id: string;
-  owner_name: string;
-  owner_email: string;
+  reviewed_at: string | null;
 }
 
 // Bank Account

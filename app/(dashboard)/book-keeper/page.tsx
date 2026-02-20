@@ -21,6 +21,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils/cn";
 import { useChat } from "@/lib/hooks/use-chat";
@@ -40,7 +47,7 @@ interface UploadedFile {
 }
 
 interface ChatInputProps {
-  onSend: (message: string, fileIds?: string[]) => void;
+  onSend: (message: string, fileIds?: string[], documentType?: string) => void;
   isConnected: boolean;
   isProcessing: boolean;
   sessionId: string | null;
@@ -56,6 +63,7 @@ const ChatInput = memo(function ChatInput({
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
+  const [documentType, setDocumentType] = useState<"expense" | "income">("expense");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = useCallback(
@@ -134,13 +142,13 @@ const ChatInput = memo(function ChatInput({
         .map((f) => f.uploadResponse!.id);
 
       const messageContent = input.trim() || "Process these files";
-      onSend(messageContent, fileIds.length > 0 ? fileIds : undefined);
+      onSend(messageContent, fileIds.length > 0 ? fileIds : undefined, documentType);
 
       setInput("");
       setUploadedFiles([]);
       setTimeout(() => setIsSending(false), 500);
     },
-    [input, uploadedFiles, isConnected, isSending, isProcessing, onSend]
+    [input, uploadedFiles, isConnected, isSending, isProcessing, onSend, documentType]
   );
 
   const getFileIcon = (file: File) => {
@@ -226,6 +234,19 @@ const ChatInput = memo(function ChatInput({
           >
             <Paperclip className="h-4 w-4" />
           </Button>
+
+          <Select
+            value={documentType}
+            onValueChange={(value: "expense" | "income") => setDocumentType(value)}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="expense">Expense</SelectItem>
+              <SelectItem value="income">Income</SelectItem>
+            </SelectContent>
+          </Select>
 
           <input
             type="text"
@@ -330,7 +351,7 @@ const MessagesArea = memo(function MessagesArea({
           <div className="mx-auto rounded-full bg-muted p-4 mb-4 w-fit">
             <Bot className="h-8 w-8" />
           </div>
-          <h3 className="text-lg font-semibold">Book keeper</h3>
+          <h3 className="text-lg font-semibold">Bookkeeper Agent</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
             Upload receipts or type a message to start recording expenses
           </p>
@@ -549,7 +570,7 @@ export default function UploadExpensePage() {
                 </Button>
               )}
               <div>
-                <CardTitle>Book keeper</CardTitle>
+                <CardTitle>Bookkeeper Agent</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   Upload receipts and record expenses with AI assistance
                 </p>

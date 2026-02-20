@@ -32,7 +32,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Book keeper", href: "/book-keeper", icon: Upload, allowedUserTypes: ["owner", "manager"] },
+  { name: "Bookkeeper Agent", href: "/book-keeper", icon: Upload, allowedUserTypes: ["owner", "manager"] },
   { name: "Accounts", href: "/accounts", icon: BookOpen, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
   { name: "Contacts", href: "/contacts", icon: Users, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
   { name: "Invoices", href: "/invoices", icon: FileText, allowedUserTypes: ["owner", "manager", "accountant", "accountant_supervisor"] },
