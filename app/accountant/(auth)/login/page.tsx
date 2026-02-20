@@ -93,7 +93,7 @@ export default function AccountantLoginPage() {
             <span className="text-2xl font-bold">GreenForest</span>
           </div>
         </div>
-        <CardTitle className="text-2xl">Accountant Portal</CardTitle>
+        <CardTitle className="text-2xl">Staff Portal</CardTitle>
         <CardDescription>
           Sign in to access your dashboard
         </CardDescription>

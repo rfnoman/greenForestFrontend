@@ -13,15 +13,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, CheckCircle2, Loader2, FileText } from "lucide-react";
-import { useSupervisorJournalFeed } from "@/lib/hooks/use-supervisor-journal-feed";
+import { Eye, CheckCircle2, ClipboardCheck, Loader2, FileText } from "lucide-react";
+import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
 import { JournalEntryQuickView } from "./journal-entry-quick-view";
-import { formatDistanceToNow } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supervisorApi } from "@/lib/api/supervisor";
 import { toast } from "sonner";
+import { useAccountantAuth } from "@/lib/hooks/use-accountant-auth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,21 +34,42 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function JournalEntryFeed() {
-  const { data: entries, isLoading, dataUpdatedAt, refetch } = useSupervisorJournalFeed();
+  const { role } = useAccountantAuth();
+  const { data, isLoading, dataUpdatedAt } = useAllJournalEntries({
+    status: "draft",
+    page_size: 50,
+  });
+  const entries = data?.items;
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEntry, setSelectedEntry] = useState<JournalEntryWithBusiness | null>(null);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [postDialogOpen, setPostDialogOpen] = useState(false);
   const [entryToPost, setEntryToPost] = useState<JournalEntryWithBusiness | null>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [entryToReview, setEntryToReview] = useState<JournalEntryWithBusiness | null>(null);
 
   const queryClient = useQueryClient();
+
+  const askForReviewMutation = useMutation({
+    mutationFn: ({ entryId, businessId }: { entryId: string; businessId: string }) =>
+      supervisorApi.askForReviewJournalEntry(entryId, businessId),
+    onSuccess: () => {
+      toast.success("Journal entry sent for review");
+      queryClient.invalidateQueries({ queryKey: ["all-journal-entries"] });
+      setReviewDialogOpen(false);
+      setEntryToReview(null);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to send for review");
+    },
+  });
 
   const postMutation = useMutation({
     mutationFn: ({ entryId, businessId }: { entryId: string; businessId: string }) =>
       supervisorApi.postJournalEntry(entryId, businessId),
     onSuccess: () => {
       toast.success("Journal entry posted successfully");
-      queryClient.invalidateQueries({ queryKey: ["supervisor-journal-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["all-journal-entries"] });
       setPostDialogOpen(false);
       setEntryToPost(null);
     },
@@ -60,6 +81,20 @@ export function JournalEntryFeed() {
   const handleView = (entry: JournalEntryWithBusiness) => {
     setSelectedEntry(entry);
     setQuickViewOpen(true);
+  };
+
+  const handleAskForReviewClick = (entry: JournalEntryWithBusiness) => {
+    setEntryToReview(entry);
+    setReviewDialogOpen(true);
+  };
+
+  const handleAskForReviewConfirm = () => {
+    if (entryToReview) {
+      askForReviewMutation.mutate({
+        entryId: entryToReview.id,
+        businessId: entryToReview.business_id,
+      });
+    }
   };
 
   const handlePostClick = (entry: JournalEntryWithBusiness) => {
@@ -76,7 +111,6 @@ export function JournalEntryFeed() {
     }
   };
 
-  // Calculate total for an entry
   const calculateTotal = (entry: JournalEntryWithBusiness) => {
     return entry.lines.reduce((sum, line) => {
       const debit = parseFloat(line.debit || "0");
@@ -84,19 +118,20 @@ export function JournalEntryFeed() {
     }, 0);
   };
 
-  // Filter entries based on search term
+  // Filter entries based on search term (client-side for this feed view)
   const filteredEntries = entries?.filter((entry) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
       entry.entry_number.toLowerCase().includes(searchLower) ||
       entry.business_name.toLowerCase().includes(searchLower) ||
-      entry.owner_name.toLowerCase().includes(searchLower) ||
       (entry.description || "").toLowerCase().includes(searchLower)
     );
   });
 
-  const lastUpdateTime = dataUpdatedAt ? formatDistanceToNow(dataUpdatedAt, { addSuffix: true }) : "Never";
+  const lastUpdateTime = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString()
+    : "Never";
 
   if (isLoading) {
     return (
@@ -126,7 +161,7 @@ export function JournalEntryFeed() {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <Input
-            placeholder="Search by entry number, business, owner, or description..."
+            placeholder="Search by entry number, business, or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-md"
@@ -140,10 +175,9 @@ export function JournalEntryFeed() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Entry #</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Entry #</TableHead>
                 <TableHead>Business</TableHead>
-                <TableHead>Owner</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -153,21 +187,13 @@ export function JournalEntryFeed() {
               {filteredEntries && filteredEntries.length > 0 ? (
                 filteredEntries.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell className="font-medium">{entry.entry_number}</TableCell>
                     <TableCell>{formatDate(entry.entry_date)}</TableCell>
+                    <TableCell className="font-medium">{entry.entry_number}</TableCell>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{entry.business_name}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{entry.owner_name}</div>
-                        <div className="text-muted-foreground">{entry.owner_email}</div>
-                      </div>
+                      <div className="font-medium">{entry.business_name}</div>
                     </TableCell>
                     <TableCell className="max-w-xs truncate">
-                      {entry.description || "—"}
+                      {entry.description || "\u2014"}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(calculateTotal(entry), "USD")}
@@ -181,6 +207,23 @@ export function JournalEntryFeed() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
+                        {role === "accountant" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAskForReviewClick(entry)}
+                            disabled={askForReviewMutation.isPending}
+                          >
+                            {askForReviewMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <ClipboardCheck className="h-4 w-4 mr-1" />
+                                Ask for Review
+                              </>
+                            )}
+                          </Button>
+                        )}
                         <Button
                           variant="default"
                           size="sm"
@@ -202,7 +245,7 @@ export function JournalEntryFeed() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No entries found matching your search
                   </TableCell>
                 </TableRow>
@@ -225,6 +268,10 @@ export function JournalEntryFeed() {
             setQuickViewOpen(false);
             handlePostClick(selectedEntry);
           }}
+          onAskForReview={role === "accountant" ? () => {
+            setQuickViewOpen(false);
+            handleAskForReviewClick(selectedEntry);
+          } : undefined}
         />
       )}
 
@@ -236,17 +283,17 @@ export function JournalEntryFeed() {
               Are you sure you want to post this journal entry? This action cannot be undone and the
               entry will be marked as posted.
               {entryToPost && (
-                <div className="mt-4 space-y-2 text-sm">
-                  <div>
+                <span className="mt-4 space-y-2 text-sm block">
+                  <span className="block">
                     <span className="font-medium">Entry:</span> {entryToPost.entry_number}
-                  </div>
-                  <div>
+                  </span>
+                  <span className="block">
                     <span className="font-medium">Business:</span> {entryToPost.business_name}
-                  </div>
-                  <div>
+                  </span>
+                  <span className="block">
                     <span className="font-medium">Total:</span> {formatCurrency(calculateTotal(entryToPost), "USD")}
-                  </div>
-                </div>
+                  </span>
+                </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -254,6 +301,36 @@ export function JournalEntryFeed() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handlePostConfirm} disabled={postMutation.isPending}>
               {postMutation.isPending ? "Posting..." : "Post Entry"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ask for Review?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to send this journal entry for supervisor review?
+              {entryToReview && (
+                <span className="mt-4 space-y-2 text-sm block">
+                  <span className="block">
+                    <span className="font-medium">Entry:</span> {entryToReview.entry_number}
+                  </span>
+                  <span className="block">
+                    <span className="font-medium">Business:</span> {entryToReview.business_name}
+                  </span>
+                  <span className="block">
+                    <span className="font-medium">Total:</span> {formatCurrency(calculateTotal(entryToReview), "USD")}
+                  </span>
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAskForReviewConfirm} disabled={askForReviewMutation.isPending}>
+              {askForReviewMutation.isPending ? "Sending..." : "Send for Review"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
