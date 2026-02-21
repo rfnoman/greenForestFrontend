@@ -10,7 +10,6 @@ import {
   MessageSquare,
   WifiOff,
   Camera,
-  Image as ImageIcon,
   FileText,
   Loader2,
   CheckCircle2,
@@ -29,6 +28,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils/cn";
 import { useChat } from "@/lib/hooks/use-chat";
 import { useAuth } from "@/lib/hooks/use-auth";
@@ -64,6 +69,7 @@ const ChatInput = memo(function ChatInput({
   const [isSending, setIsSending] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [documentType, setDocumentType] = useState<"expense" | "income">("expense");
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = useCallback(
@@ -151,16 +157,6 @@ const ChatInput = memo(function ChatInput({
     [input, uploadedFiles, isConnected, isSending, isProcessing, onSend, documentType]
   );
 
-  const getFileIcon = (file: File) => {
-    if (file.type.startsWith("image/")) {
-      return <ImageIcon className="h-4 w-4" />;
-    }
-    if (file.type === "application/pdf") {
-      return <FileText className="h-4 w-4" />;
-    }
-    return <FileIcon className="h-4 w-4" />;
-  };
-
   const hasUploadingFiles = uploadedFiles.some((f) => f.status === "uploading");
   const hasUploadedFiles = uploadedFiles.some((f) => f.status === "uploaded");
   const canSend = isConnected && !isSending && !isProcessing && !hasUploadingFiles && (input.trim() || hasUploadedFiles);
@@ -174,7 +170,7 @@ const ChatInput = memo(function ChatInput({
               <div
                 key={uploadedFile.id}
                 className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
+                  "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
                   uploadedFile.status === "uploading" && "bg-muted",
                   uploadedFile.status === "uploaded" && "bg-green-50 dark:bg-green-950",
                   uploadedFile.status === "error" && "bg-red-50 dark:bg-red-950"
@@ -189,7 +185,24 @@ const ChatInput = memo(function ChatInput({
                 {uploadedFile.status === "error" && (
                   <AlertCircle className="h-4 w-4 text-red-600" />
                 )}
-                {getFileIcon(uploadedFile.file)}
+                <button
+                  type="button"
+                  onClick={() => setPreviewFile(uploadedFile.file)}
+                  className="flex-shrink-0 rounded overflow-hidden border border-border hover:opacity-80 transition-opacity"
+                  title={uploadedFile.file.name}
+                >
+                  {uploadedFile.file.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(uploadedFile.file)}
+                      alt={uploadedFile.file.name}
+                      className="h-[60px] w-[60px] object-cover"
+                    />
+                  ) : (
+                    <div className="h-[60px] w-[60px] flex items-center justify-center bg-muted">
+                      <FileText className="h-3 w-3" />
+                    </div>
+                  )}
+                </button>
                 <span className="max-w-[150px] truncate">{uploadedFile.file.name}</span>
                 <button
                   type="button"
@@ -283,6 +296,37 @@ const ChatInput = memo(function ChatInput({
         onOpenChange={setShowCameraModal}
         onCapture={handleCameraCapture}
       />
+
+      <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="truncate">{previewFile?.name}</DialogTitle>
+          </DialogHeader>
+          {previewFile && (
+            <div className="flex items-center justify-center max-h-[70vh] overflow-auto">
+              {previewFile.type.startsWith("image/") ? (
+                <img
+                  src={URL.createObjectURL(previewFile)}
+                  alt={previewFile.name}
+                  className="max-w-full max-h-[65vh] object-contain rounded"
+                />
+              ) : previewFile.type === "application/pdf" ? (
+                <iframe
+                  src={URL.createObjectURL(previewFile)}
+                  title={previewFile.name}
+                  className="w-full h-[65vh] rounded"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                  <FileIcon className="h-12 w-12" />
+                  <p className="text-sm">{previewFile.name}</p>
+                  <p className="text-xs">Preview not available for this file type</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 });

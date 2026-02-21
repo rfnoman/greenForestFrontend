@@ -233,6 +233,11 @@ export interface JournalEntryContact {
   type: ContactType;
 }
 
+export interface ChatSessionRef {
+  id: string;
+  title: string;
+}
+
 export interface JournalEntry {
   id: string;
   entry_number: string;
@@ -245,6 +250,7 @@ export interface JournalEntry {
   voided_at: string | null;
   void_reason: string | null;
   contact: JournalEntryContact | null;
+  chat_session: ChatSessionRef | null;
   lines: JournalEntryLine[];
   created_at: string;
 }
