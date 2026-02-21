@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, ArrowUpDown, CheckCircle2, ClipboardCheck, Loader2, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, ArrowUpDown, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
@@ -44,7 +44,7 @@ import {
 type SortField = "entry_date" | "entry_number" | "business_name" | "created_at";
 
 export default function AccountantJournalEntriesPage() {
-  const { role } = useAccountantAuth();
+  useAccountantAuth();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -275,40 +275,6 @@ export default function AccountantJournalEntriesPage() {
                             <Button variant="ghost" size="sm" onClick={() => handleView(entry)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {entry.status === "draft" && role === "accountant" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleAskForReviewClick(entry)}
-                                disabled={askForReviewMutation.isPending}
-                              >
-                                {askForReviewMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <ClipboardCheck className="h-4 w-4 mr-1" />
-                                    Ask for Review
-                                  </>
-                                )}
-                              </Button>
-                            )}
-                            {entry.status === "draft" && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handlePostClick(entry)}
-                                disabled={postMutation.isPending}
-                              >
-                                {postMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                    Post
-                                  </>
-                                )}
-                              </Button>
-                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -371,12 +337,12 @@ export default function AccountantJournalEntriesPage() {
               handlePostClick(selectedEntry);
             }
           }}
-          onAskForReview={role === "accountant" ? () => {
+          onAskForReview={() => {
             setQuickViewOpen(false);
             if (selectedEntry.status === "draft") {
               handleAskForReviewClick(selectedEntry);
             }
-          } : undefined}
+          }}
         />
       )}
 

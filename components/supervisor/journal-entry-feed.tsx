@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, CheckCircle2, ClipboardCheck, Loader2, FileText } from "lucide-react";
+import { Eye, FileText } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function JournalEntryFeed() {
-  const { role } = useAccountantAuth();
+  useAccountantAuth();
   const { data, isLoading, dataUpdatedAt } = useAllJournalEntries({
     status: "draft",
     page_size: 50,
@@ -207,38 +207,6 @@ export function JournalEntryFeed() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {role === "accountant" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAskForReviewClick(entry)}
-                            disabled={askForReviewMutation.isPending}
-                          >
-                            {askForReviewMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <ClipboardCheck className="h-4 w-4 mr-1" />
-                                Ask for Review
-                              </>
-                            )}
-                          </Button>
-                        )}
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handlePostClick(entry)}
-                          disabled={postMutation.isPending}
-                        >
-                          {postMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Post
-                            </>
-                          )}
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -268,10 +236,10 @@ export function JournalEntryFeed() {
             setQuickViewOpen(false);
             handlePostClick(selectedEntry);
           }}
-          onAskForReview={role === "accountant" ? () => {
+          onAskForReview={() => {
             setQuickViewOpen(false);
             handleAskForReviewClick(selectedEntry);
-          } : undefined}
+          }}
         />
       )}
 

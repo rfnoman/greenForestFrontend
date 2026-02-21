@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, ArrowUpDown, CheckCircle2, Loader2, FileText, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
+import { Eye, ArrowUpDown, FileText, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
@@ -232,21 +232,6 @@ export default function AskedForReviewPage() {
                           <div className="flex items-center justify-end gap-2">
                             <Button variant="ghost" size="sm" onClick={() => handleView(entry)}>
                               <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handlePostClick(entry)}
-                              disabled={postMutation.isPending}
-                            >
-                              {postMutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                                  Post
-                                </>
-                              )}
                             </Button>
                           </div>
                         </TableCell>

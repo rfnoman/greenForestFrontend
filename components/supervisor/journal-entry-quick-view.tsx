@@ -20,9 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ClipboardCheck, ExternalLink } from "lucide-react";
+import { CheckCircle2, ClipboardCheck } from "lucide-react";
 import type { JournalEntryWithBusiness } from "@/lib/types";
-import { useRouter } from "next/navigation";
 
 interface JournalEntryQuickViewProps {
   entry: JournalEntryWithBusiness;
@@ -39,8 +38,6 @@ export function JournalEntryQuickView({
   onPost,
   onAskForReview,
 }: JournalEntryQuickViewProps) {
-  const router = useRouter();
-
   // Calculate totals
   const totalDebit = entry.lines.reduce(
     (sum, line) => sum + parseFloat(line.debit || "0"),
@@ -50,13 +47,6 @@ export function JournalEntryQuickView({
     (sum, line) => sum + parseFloat(line.credit || "0"),
     0
   );
-
-  const handleEdit = () => {
-    // Navigate to the journal entry detail page
-    // Note: This will require impersonating the owner first
-    router.push(`/journal-entries/${entry.id}`);
-    onOpenChange(false);
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -175,11 +165,7 @@ export function JournalEntryQuickView({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button variant="secondary" onClick={handleEdit}>
-            <ExternalLink className="h-4 w-4 mr-2" />
-            View Full Details
-          </Button>
-          {onAskForReview && entry.status === "draft" && (
+{onAskForReview && entry.status === "draft" && (
             <Button variant="outline" onClick={onAskForReview}>
               <ClipboardCheck className="h-4 w-4 mr-2" />
               Ask for Review
