@@ -10,16 +10,16 @@ const badgeVariants = cva(
         default:
           "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm text-secondary-foreground border-white/20 dark:border-white/10 hover:bg-white/60 dark:hover:bg-gray-800/60",
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+        outline: "text-foreground backdrop-blur-sm bg-white/30 dark:bg-gray-900/30 border-white/20 dark:border-white/10",
         success:
-          "border-transparent bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+          "border-green-200/50 dark:border-green-800/30 bg-green-100/70 text-green-800 dark:bg-green-900/50 dark:text-green-100 backdrop-blur-sm",
         warning:
-          "border-transparent bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
+          "border-yellow-200/50 dark:border-yellow-800/30 bg-yellow-100/70 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-100 backdrop-blur-sm",
         info:
-          "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+          "border-blue-200/50 dark:border-blue-800/30 bg-blue-100/70 text-blue-800 dark:bg-blue-900/50 dark:text-blue-100 backdrop-blur-sm",
       },
     },
     defaultVariants: {

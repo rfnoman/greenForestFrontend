@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountantAuthProvider, useAccountantAuth } from "@/lib/hooks/use-accountant-auth";
+import { SidebarProvider } from "@/lib/hooks/use-sidebar";
 import { AccountantSidebar } from "@/components/accountant/accountant-sidebar";
 import { AccountantHeader } from "@/components/accountant/accountant-header";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,15 +19,17 @@ function SupervisorLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen">
-      <AccountantSidebar role="accountant_supervisor" />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <AccountantHeader user={user} role="accountant_supervisor" onLogout={logout} />
-        <main className="flex-1 overflow-auto bg-muted/10">
-          {children}
-        </main>
+    <SidebarProvider>
+      <div className="flex h-screen">
+        <AccountantSidebar role="accountant_supervisor" />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <AccountantHeader user={user} role="accountant_supervisor" onLogout={logout} />
+          <main className="flex-1 overflow-auto bg-gradient-to-br from-green-50/80 via-emerald-50/40 to-teal-50/30 dark:from-gray-950 dark:via-emerald-950/20 dark:to-gray-900">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 

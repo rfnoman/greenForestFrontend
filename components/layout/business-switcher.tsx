@@ -11,11 +11,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BusinessFormDialog } from "@/components/forms/business-form";
 
 export function BusinessSwitcher() {
-  const { currentBusiness, businesses, isLoading, setCurrentBusiness } =
+  const { currentBusiness, businesses, isLoading, setCurrentBusiness, refreshBusinesses } =
     useBusiness();
   const [open, setOpen] = useState(false);
+  const [showBusinessForm, setShowBusinessForm] = useState(false);
 
   if (isLoading) {
     return <Skeleton className="h-9 w-[200px]" />;
@@ -26,6 +28,7 @@ export function BusinessSwitcher() {
   }
 
   return (
+    <>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
@@ -64,12 +67,24 @@ export function BusinessSwitcher() {
           ))}
         </div>
         <div className="border-t p-1">
-          <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-muted">
+          <button
+            onClick={() => {
+              setOpen(false);
+              setShowBusinessForm(true);
+            }}
+            className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-muted"
+          >
             <Plus className="h-4 w-4" />
             Add Business
           </button>
         </div>
       </PopoverContent>
     </Popover>
+    <BusinessFormDialog
+      open={showBusinessForm}
+      onOpenChange={setShowBusinessForm}
+      onSuccess={() => refreshBusinesses()}
+    />
+    </>
   );
 }
