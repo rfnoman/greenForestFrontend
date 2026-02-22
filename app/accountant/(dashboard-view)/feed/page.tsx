@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { JournalEntryFeed } from "@/components/supervisor/journal-entry-feed";
 import { useJournalWebSocket } from "@/lib/hooks/use-journal-websocket";
 import { useAccountantAuth } from "@/lib/hooks/use-accountant-auth";
+import { BusinessSearchSelect } from "@/components/shared/business-search-select";
 
 function ConnectionStatusBadge({ status }: { status: string }) {
   const config: Record<string, { color: string; label: string }> = {
@@ -26,6 +28,7 @@ function ConnectionStatusBadge({ status }: { status: string }) {
 
 export default function AccountantFeedPage() {
   const { role } = useAccountantAuth();
+  const [businessFilter, setBusinessFilter] = useState<string | undefined>(undefined);
   const storageKey = role === "accountant"
     ? "greenforest_accountant_access_token"
     : "greenforest_supervisor_access_token";
@@ -44,11 +47,19 @@ export default function AccountantFeedPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Draft Entries</CardTitle>
-          <CardDescription>Post entries after review verification</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Draft Entries</CardTitle>
+              <CardDescription>Post entries after review verification</CardDescription>
+            </div>
+            <BusinessSearchSelect
+              value={businessFilter}
+              onValueChange={setBusinessFilter}
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          <JournalEntryFeed />
+          <JournalEntryFeed businessId={businessFilter} />
         </CardContent>
       </Card>
     </div>

@@ -8,6 +8,7 @@ import { useBusiness } from "@/lib/hooks/use-business";
 import { SidebarProvider } from "@/lib/hooks/use-sidebar";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { ImpersonationBanner } from "@/components/layout/impersonation-banner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,13 +80,16 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen">
-        <Sidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-auto bg-gradient-to-br from-green-50/80 via-emerald-50/40 to-teal-50/30 dark:from-gray-950 dark:via-emerald-950/20 dark:to-gray-900 p-4 lg:p-6">
-            {children}
-          </main>
+      <div className="flex flex-col h-screen">
+        <ImpersonationBanner />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-auto bg-gradient-to-br from-green-50/80 via-emerald-50/40 to-teal-50/30 dark:from-gray-950 dark:via-emerald-950/20 dark:to-gray-900 p-4 lg:p-6">
+              {children}
+            </main>
+          </div>
         </div>
       </div>
     </SidebarProvider>

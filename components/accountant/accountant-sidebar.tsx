@@ -9,6 +9,7 @@ import {
   Users,
   Leaf,
   ClipboardCheck,
+  BarChart3,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -35,6 +36,7 @@ function getNavItems(basePath: string, role: "accountant" | "accountant_supervis
   ];
 
   if (role === "accountant_supervisor") {
+    items.push({ name: "Supervisor Overview", href: `${basePath}/supervisor-overview`, icon: BarChart3 });
     items.push({ name: "Asked for Review", href: `${basePath}/asked-for-review`, icon: ClipboardCheck });
   }
 

@@ -36,6 +36,7 @@ import {
   X,
   User,
   Bot,
+  Pencil,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supervisorApi } from "@/lib/api/supervisor";
@@ -47,6 +48,7 @@ interface JournalEntryQuickViewProps {
   onOpenChange: (open: boolean) => void;
   onPost: () => void;
   onAskForReview?: () => void;
+  onEdit?: () => void;
 }
 
 export function JournalEntryQuickView({
@@ -55,6 +57,7 @@ export function JournalEntryQuickView({
   onOpenChange,
   onPost,
   onAskForReview,
+  onEdit,
 }: JournalEntryQuickViewProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showConversation, setShowConversation] = useState(false);
@@ -97,7 +100,9 @@ export function JournalEntryQuickView({
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               Journal Entry: {entry.entry_number}
-              <Badge variant="outline">Draft</Badge>
+              <Badge variant="outline">
+                {entry.status === "ask_for_review" ? "Ask for Review" : entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+              </Badge>
             </SheetTitle>
             <SheetDescription>
               Review the details of this journal entry
@@ -283,6 +288,12 @@ export function JournalEntryQuickView({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
+            {onEdit && (entry.status === "draft" || entry.status === "ask_for_review") && (
+              <Button variant="outline" onClick={onEdit}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            )}
             {onAskForReview && entry.status === "draft" && (
               <Button variant="outline" onClick={onAskForReview}>
                 <ClipboardCheck className="h-4 w-4 mr-2" />
