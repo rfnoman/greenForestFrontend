@@ -57,3 +57,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10;
+  }
+  .glass-heavy {
+    @apply bg-white/85 dark:bg-gray-900/75 backdrop-blur-2xl border border-white/25 dark:border-white/15;
+  }
+  .glass-sidebar {
+    @apply bg-white/60 dark:bg-gray-900/50 backdrop-blur-2xl;
+  }
+  .glass-header {
+    @apply bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl;
+  }
+  .glass-input {
+    @apply bg-white/50 dark:bg-gray-900/40 backdrop-blur-sm border border-white/30 dark:border-white/15;
+  }
+}

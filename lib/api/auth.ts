@@ -20,4 +20,10 @@ export const authApi = {
   getMe: () => apiClient.get<User>("/users/me"),
 
   updateMe: (data: Partial<User>) => apiClient.patch<User>("/users/me", data),
+
+  endImpersonation: (refreshToken: string | null) =>
+    apiClient.post<{ access: string; refresh: string; user: User }>(
+      "/users/end-impersonate",
+      { refresh: refreshToken }
+    ),
 };

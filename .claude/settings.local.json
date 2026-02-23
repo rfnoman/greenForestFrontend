@@ -4,7 +4,9 @@
       "Bash(npx create-next-app@latest:*)",
       "Bash(ls:*)",
       "Bash(npm info next versions --json)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

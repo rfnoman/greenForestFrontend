@@ -21,15 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, ArrowUpDown, CheckCircle2, ClipboardCheck, Loader2, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, ArrowUpDown, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
 import { JournalEntryQuickView } from "@/components/supervisor/journal-entry-quick-view";
+import { JournalEntryEditModal } from "@/components/supervisor/journal-entry-edit-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supervisorApi } from "@/lib/api/supervisor";
 import { toast } from "sonner";
 import { useAccountantAuth } from "@/lib/hooks/use-accountant-auth";
+import { BusinessSearchSelect } from "@/components/shared/business-search-select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +46,7 @@ import {
 type SortField = "entry_date" | "entry_number" | "business_name" | "created_at";
 
 export default function AccountantJournalEntriesPage() {
-  const { role } = useAccountantAuth();
+  useAccountantAuth();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -58,6 +60,9 @@ export default function AccountantJournalEntriesPage() {
   const [entryToPost, setEntryToPost] = useState<JournalEntryWithBusiness | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [entryToReview, setEntryToReview] = useState<JournalEntryWithBusiness | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [entryToEdit, setEntryToEdit] = useState<JournalEntryWithBusiness | null>(null);
+  const [businessFilter, setBusinessFilter] = useState<string | undefined>(undefined);
 
   const queryClient = useQueryClient();
 
@@ -75,6 +80,7 @@ export default function AccountantJournalEntriesPage() {
     page_size: pageSize,
     status: statusFilter !== "all" ? statusFilter : undefined,
     search: debouncedSearch || undefined,
+    business_id: businessFilter,
     sort_by: sortField,
     sort_order: sortDirection,
   });
@@ -128,6 +134,11 @@ export default function AccountantJournalEntriesPage() {
   const handleView = (entry: JournalEntryWithBusiness) => {
     setSelectedEntry(entry);
     setQuickViewOpen(true);
+  };
+
+  const handleEditClick = (entry: JournalEntryWithBusiness) => {
+    setEntryToEdit(entry);
+    setEditModalOpen(true);
   };
 
   const handleAskForReviewClick = (entry: JournalEntryWithBusiness) => {
@@ -198,6 +209,13 @@ export default function AccountantJournalEntriesPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-xs"
+            />
+            <BusinessSearchSelect
+              value={businessFilter}
+              onValueChange={(val) => {
+                setBusinessFilter(val);
+                setPage(1);
+              }}
             />
             <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger className="w-[150px]">
@@ -275,40 +293,6 @@ export default function AccountantJournalEntriesPage() {
                             <Button variant="ghost" size="sm" onClick={() => handleView(entry)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {entry.status === "draft" && role === "accountant" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleAskForReviewClick(entry)}
-                                disabled={askForReviewMutation.isPending}
-                              >
-                                {askForReviewMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <ClipboardCheck className="h-4 w-4 mr-1" />
-                                    Ask for Review
-                                  </>
-                                )}
-                              </Button>
-                            )}
-                            {entry.status === "draft" && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handlePostClick(entry)}
-                                disabled={postMutation.isPending}
-                              >
-                                {postMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                    Post
-                                  </>
-                                )}
-                              </Button>
-                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -371,12 +355,27 @@ export default function AccountantJournalEntriesPage() {
               handlePostClick(selectedEntry);
             }
           }}
-          onAskForReview={role === "accountant" ? () => {
+          onAskForReview={() => {
             setQuickViewOpen(false);
             if (selectedEntry.status === "draft") {
               handleAskForReviewClick(selectedEntry);
             }
-          } : undefined}
+          }}
+          onEdit={() => {
+            setQuickViewOpen(false);
+            handleEditClick(selectedEntry);
+          }}
+        />
+      )}
+
+      {entryToEdit && (
+        <JournalEntryEditModal
+          entry={entryToEdit}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onSuccess={() => {
+            setEntryToEdit(null);
+          }}
         />
       )}
 

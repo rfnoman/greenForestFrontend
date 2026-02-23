@@ -112,11 +112,27 @@ export function AccountantAuthProvider({ children, role }: AccountantAuthProvide
         { email: ownerEmail }
       );
 
+      // Save accountant's original tokens as fallback for end-impersonation
+      const currentAccess = localStorage.getItem(keys.access);
+      const currentRefresh = localStorage.getItem(keys.refresh);
+      const currentRoleId = localStorage.getItem(keys.role);
+
+      if (currentAccess) {
+        localStorage.setItem("greenforest_impersonation_access", currentAccess);
+      }
+      if (currentRefresh) {
+        localStorage.setItem("greenforest_impersonation_refresh", currentRefresh);
+      }
+      if (currentRoleId) {
+        localStorage.setItem("greenforest_impersonation_role_id", currentRoleId);
+      }
+      localStorage.setItem("greenforest_impersonation_role", role);
+
+      // Store owner tokens for AuthProvider to pick up
       localStorage.setItem("greenforest_access_token", response.access);
       localStorage.setItem("greenforest_refresh_token", response.refresh);
-      const roleId = localStorage.getItem(keys.role);
-      if (roleId) {
-        localStorage.setItem("greenforest_role_id", roleId);
+      if (currentRoleId) {
+        localStorage.setItem("greenforest_role_id", currentRoleId);
       }
       localStorage.setItem("greenforest_impersonated", "true");
 
@@ -125,7 +141,7 @@ export function AccountantAuthProvider({ children, role }: AccountantAuthProvide
     } catch {
       toast.error("Failed to impersonate user");
     }
-  }, [keys]);
+  }, [keys, role]);
 
   return (
     <AccountantAuthContext.Provider

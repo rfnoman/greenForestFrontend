@@ -21,11 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, ArrowUpDown, CheckCircle2, Loader2, FileText, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
+import { Eye, ArrowUpDown, FileText, ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
+import { BusinessSearchSelect } from "@/components/shared/business-search-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
 import { JournalEntryQuickView } from "@/components/supervisor/journal-entry-quick-view";
+import { JournalEntryEditModal } from "@/components/supervisor/journal-entry-edit-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supervisorApi } from "@/lib/api/supervisor";
 import { toast } from "sonner";
@@ -53,6 +55,9 @@ export default function AskedForReviewPage() {
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [postDialogOpen, setPostDialogOpen] = useState(false);
   const [entryToPost, setEntryToPost] = useState<JournalEntryWithBusiness | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [entryToEdit, setEntryToEdit] = useState<JournalEntryWithBusiness | null>(null);
+  const [businessFilter, setBusinessFilter] = useState<string | undefined>(undefined);
 
   const queryClient = useQueryClient();
 
@@ -70,6 +75,7 @@ export default function AskedForReviewPage() {
     page_size: pageSize,
     status: "ask_for_review",
     search: debouncedSearch || undefined,
+    business_id: businessFilter,
     sort_by: sortField,
     sort_order: sortDirection,
   });
@@ -104,6 +110,11 @@ export default function AskedForReviewPage() {
       setSortDirection("desc");
     }
     setPage(1);
+  };
+
+  const handleEditClick = (entry: JournalEntryWithBusiness) => {
+    setEntryToEdit(entry);
+    setEditModalOpen(true);
   };
 
   const handleView = (entry: JournalEntryWithBusiness) => {
@@ -157,7 +168,7 @@ export default function AskedForReviewPage() {
         </CardHeader>
         <CardContent>
           {/* Search */}
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex flex-wrap items-center gap-4 mb-4">
             <div className="relative max-w-xs flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -167,6 +178,13 @@ export default function AskedForReviewPage() {
                 className="pl-9"
               />
             </div>
+            <BusinessSearchSelect
+              value={businessFilter}
+              onValueChange={(val) => {
+                setBusinessFilter(val);
+                setPage(1);
+              }}
+            />
           </div>
 
           {isLoading ? (
@@ -233,21 +251,6 @@ export default function AskedForReviewPage() {
                             <Button variant="ghost" size="sm" onClick={() => handleView(entry)}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handlePostClick(entry)}
-                              disabled={postMutation.isPending}
-                            >
-                              {postMutation.isPending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                                  Post
-                                </>
-                              )}
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -307,6 +310,21 @@ export default function AskedForReviewPage() {
           onPost={() => {
             setQuickViewOpen(false);
             handlePostClick(selectedEntry);
+          }}
+          onEdit={() => {
+            setQuickViewOpen(false);
+            handleEditClick(selectedEntry);
+          }}
+        />
+      )}
+
+      {entryToEdit && (
+        <JournalEntryEditModal
+          entry={entryToEdit}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onSuccess={() => {
+            setEntryToEdit(null);
           }}
         />
       )}

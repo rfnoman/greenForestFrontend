@@ -213,7 +213,7 @@ export interface Expense {
 }
 
 // Journal Entry
-export type JournalEntryStatus = 'draft' | 'posted' | 'voided';
+export type JournalEntryStatus = 'draft' | 'ask_for_review' | 'posted' | 'voided';
 export type SourceType = 'manual' | 'invoice' | 'bill' | 'expense';
 
 export interface JournalEntryLine {
@@ -233,6 +233,11 @@ export interface JournalEntryContact {
   type: ContactType;
 }
 
+export interface ChatSessionRef {
+  id: string;
+  title: string;
+}
+
 export interface JournalEntry {
   id: string;
   entry_number: string;
@@ -245,6 +250,7 @@ export interface JournalEntry {
   voided_at: string | null;
   void_reason: string | null;
   contact: JournalEntryContact | null;
+  chat_session: ChatSessionRef | null;
   lines: JournalEntryLine[];
   created_at: string;
 }
@@ -306,17 +312,110 @@ export interface Reconciliation {
 // Payment
 export type PaymentMethod = 'bank_transfer' | 'check' | 'cash' | 'credit_card' | 'other';
 
-// Reports
+// Reports - Dashboard
+export interface DashboardRecentInvoice {
+  id: string;
+  invoice_number: string;
+  customer_name: string;
+  issue_date: string;
+  due_date: string;
+  total: string;
+  balance_due: string;
+  status: string;
+}
+
+export interface DashboardRecentBill {
+  id: string;
+  bill_number: string;
+  vendor_name: string;
+  bill_date: string;
+  due_date: string;
+  total: string;
+  balance_due: string;
+  status: string;
+}
+
+export interface DashboardRecentExpense {
+  id: string;
+  date: string;
+  amount: string;
+  category_name: string;
+  vendor_name: string | null;
+  description: string | null;
+}
+
+export interface DashboardRecentJournalEntry {
+  id: string;
+  entry_number: string;
+  entry_date: string;
+  description: string | null;
+  status: string;
+  source_type: string;
+  total_amount: string;
+}
+
+export interface DashboardRecentIncome {
+  id: string;
+  date: string;
+  amount: string;
+  income_type: string;
+  description: string | null;
+  category_name: string;
+  contact_name: string | null;
+}
+
+export interface DashboardBankAccount {
+  id: string;
+  name: string;
+  bank_name: string | null;
+  account_type: string;
+  current_balance: string;
+}
+
+export interface RevenueByMonth {
+  month: string;
+  month_label: string;
+  amount: string;
+}
+
+export interface ExpenseByCategory {
+  account_code: string;
+  account_name: string;
+  amount: string;
+}
+
+export interface StatusDistribution {
+  status: string;
+  count: number;
+  total_amount: string;
+}
+
+export interface UnreconciledTransactions {
+  count: number;
+  total_amount: string;
+}
+
 export interface DashboardData {
-  total_revenue: string;
-  total_expenses: string;
-  net_income: string;
+  as_of_date: string;
+  cash_balance: string;
   accounts_receivable: string;
   accounts_payable: string;
-  cash_balance: string;
+  revenue_this_month: string;
+  expenses_this_month: string;
+  net_income_this_month: string;
   overdue_invoices_count: number;
   overdue_bills_count: number;
-  recent_transactions: BankTransaction[];
+  recent_invoices: DashboardRecentInvoice[];
+  recent_bills: DashboardRecentBill[];
+  recent_expenses: DashboardRecentExpense[];
+  recent_journal_entries: DashboardRecentJournalEntry[];
+  recent_incomes: DashboardRecentIncome[];
+  bank_accounts: DashboardBankAccount[];
+  revenue_by_month: RevenueByMonth[];
+  expenses_by_category: ExpenseByCategory[];
+  invoice_status_distribution: StatusDistribution[];
+  bill_status_distribution: StatusDistribution[];
+  unreconciled_transactions: UnreconciledTransactions;
 }
 
 export interface ProfitLossReport {
@@ -654,4 +753,122 @@ export interface ChatSession {
 
 export interface ChatSessionDetail extends ChatSession {
   messages: ChatMessage[];
+}
+
+// Accountant Dashboard
+export interface AccountantDashboardBusinessOverview {
+  id: string;
+  name: string;
+  slug: string;
+  owner_name: string;
+  owner_email: string;
+  is_active: boolean;
+  currency: string;
+  total_ar: string;
+  total_ap: string;
+  cash_balance: string;
+  revenue_this_month: string;
+  expenses_this_month: string;
+  net_income_this_month: string;
+  overdue_invoices_count: number;
+  overdue_bills_count: number;
+  pending_journal_entries: number;
+  review_requested_entries: number;
+}
+
+export interface AccountantDashboardJournalEntry {
+  business_name: string;
+  business_id: string;
+  entry_number: string;
+  entry_date: string;
+  description: string | null;
+  status: string;
+  source_type: string;
+  total_amount: string;
+  created_at: string;
+}
+
+export interface AccountantDashboardData {
+  as_of_date: string;
+  total_businesses: number;
+  active_businesses: number;
+  total_owners: number;
+  total_pending_entries: number;
+  total_review_requested_entries: number;
+  total_ar_all_businesses: string;
+  total_ap_all_businesses: string;
+  total_overdue_invoices: number;
+  total_overdue_bills: number;
+  business_overviews: AccountantDashboardBusinessOverview[];
+  recent_journal_entries: AccountantDashboardJournalEntry[];
+}
+
+// Supervisor Dashboard
+export interface UserTypeDistribution {
+  user_type: string;
+  count: number;
+}
+
+export interface MonthlyRegistration {
+  month: string;
+  month_label: string;
+  user_count: number;
+  business_count: number;
+}
+
+export interface RecentImpersonation {
+  accountant_email: string;
+  target_email: string;
+  reason: string;
+  started_at: string;
+  ended_at: string | null;
+}
+
+export interface AccountantPerformance {
+  accountant_id: string;
+  accountant_email: string;
+  accountant_name: string;
+  entries_posted_this_month: number;
+  entries_reviewed_this_month: number;
+  impersonations_this_month: number;
+}
+
+export interface SupervisorDashboardData {
+  as_of_date: string;
+  total_users: number;
+  active_users: number;
+  total_owners: number;
+  total_managers: number;
+  total_accountants: number;
+  total_supervisors: number;
+  user_type_distribution: UserTypeDistribution[];
+  total_businesses: number;
+  active_businesses: number;
+  total_journal_entries: number;
+  total_posted_entries: number;
+  total_draft_entries: number;
+  total_review_requested_entries: number;
+  total_void_entries: number;
+  total_ar_system: string;
+  total_ap_system: string;
+  total_overdue_invoices: number;
+  total_overdue_bills: number;
+  monthly_registrations: MonthlyRegistration[];
+  recent_impersonations: RecentImpersonation[];
+  accountant_performance: AccountantPerformance[];
+}
+
+// Business Search (for accountants & supervisors)
+export interface BusinessSearch {
+  id: string;
+  name: string;
+  slug: string;
+  industry: string;
+  currency: string;
+  email: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string;
+  owner_email: string | null;
+  owner_name: string | null;
 }

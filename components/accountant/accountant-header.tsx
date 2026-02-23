@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils/cn";
+import { useSidebar } from "@/lib/hooks/use-sidebar";
 import type { User } from "@/lib/types";
 
 interface NavItem {
@@ -47,12 +48,13 @@ interface AccountantHeaderProps {
 export function AccountantHeader({ user, role, onLogout }: AccountantHeaderProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { toggleSidebar } = useSidebar();
   const basePath = role === "accountant" ? "/accountant" : "/accountant-supervisor";
   const navigation = getNavItems(basePath, role);
   const roleLabel = role === "accountant" ? "Accountant" : "Supervisor";
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background">
+    <header className="sticky top-0 z-50 border-b border-white/20 dark:border-white/10 bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl">
       <div className="flex h-14 items-center px-4 gap-4">
         {/* Mobile menu */}
         <Sheet open={open} onOpenChange={setOpen}>
@@ -102,6 +104,17 @@ export function AccountantHeader({ user, role, onLogout }: AccountantHeaderProps
             </div>
           </SheetContent>
         </Sheet>
+
+        {/* Desktop sidebar toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden lg:flex"
+          onClick={toggleSidebar}
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle sidebar</span>
+        </Button>
 
         <div className="flex-1" />
 

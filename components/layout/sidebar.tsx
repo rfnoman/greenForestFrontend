@@ -20,7 +20,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { useSidebar } from "@/lib/hooks/use-sidebar";
 import type { UserType } from "@/lib/types";
 
 interface NavItem {
@@ -48,61 +55,86 @@ const navigation: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { isCollapsed } = useSidebar();
 
   const filteredNavigation = navigation.filter((item) => {
-    // Always show items without restrictions (like Dashboard)
     if (!item.allowedUserTypes) return true;
-    // Hide restricted items if user is not loaded yet
     if (!user?.user_type) return false;
-    // Only show if user's type is in the allowed list
     return item.allowedUserTypes.includes(user.user_type);
   });
 
   return (
-    <div className="hidden border-r bg-muted/40 lg:block lg:w-64">
-      <div className="flex h-full flex-col">
-        <div className="flex h-14 items-center border-b px-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Leaf className="h-6 w-6 text-primary" />
-            <div className="flex flex-col">
-              <span>GreenForest</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                {user?.user_type === 'owner' && 'Owner'}
-                {user?.user_type === 'manager' && 'Manager'}
-                {user?.user_type === 'accountant' && 'Accountant'}
-                {user?.user_type === 'accountant_supervisor' && 'Accountant Supervisor'}
-              </span>
-            </div>
+    <TooltipProvider delayDuration={0}>
+      <div
+        className={cn(
+          "hidden lg:flex flex-col bg-white/60 dark:bg-gray-900/50 backdrop-blur-2xl border-r border-white/20 dark:border-white/10 shadow-xl shadow-black/5 dark:shadow-black/20 transition-all duration-300 ease-in-out",
+          isCollapsed ? "lg:w-16" : "lg:w-64"
+        )}
+      >
+        <div className={cn(
+          "flex h-14 items-center border-b border-white/20 dark:border-white/10",
+          isCollapsed ? "justify-center px-2" : "px-4"
+        )}>
+          <Link href="/" className="flex items-center gap-2 font-semibold overflow-hidden">
+            <Leaf className="h-6 w-6 text-primary shrink-0" />
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                <span>GreenForest</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {user?.user_type === 'owner' && 'Owner'}
+                  {user?.user_type === 'manager' && 'Manager'}
+                  {user?.user_type === 'accountant' && 'Accountant'}
+                  {user?.user_type === 'accountant_supervisor' && 'Accountant Supervisor'}
+                </span>
+              </div>
+            )}
           </Link>
         </div>
-        
+
         <ScrollArea className="flex-1 py-2">
-          <nav className="grid gap-1 px-2">
+          <nav className={cn("grid gap-1", isCollapsed ? "px-1" : "px-2")}>
             {filteredNavigation.map((item) => {
               const isActive =
                 item.href === "/"
                   ? pathname === "/"
                   : pathname === item.href || pathname.startsWith(item.href + "/");
 
-              return (
+              const linkElement = (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                    "flex items-center rounded-lg text-sm transition-all duration-200",
+                    isCollapsed
+                      ? "justify-center h-10 w-10 mx-auto"
+                      : "gap-3 px-3 py-2",
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                      : "text-muted-foreground hover:bg-white/50 dark:hover:bg-gray-800/50 hover:text-foreground"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && item.name}
                 </Link>
               );
+
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.name}>
+                    <TooltipTrigger asChild>{linkElement}</TooltipTrigger>
+                    <TooltipContent side="right" className="font-medium">
+                      {item.name}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return linkElement;
             })}
           </nav>
         </ScrollArea>
+
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

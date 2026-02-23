@@ -13,11 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, CheckCircle2, ClipboardCheck, Loader2, FileText } from "lucide-react";
+import { Eye, FileText } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
 import { JournalEntryQuickView } from "./journal-entry-quick-view";
+import { JournalEntryEditModal } from "./journal-entry-edit-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supervisorApi } from "@/lib/api/supervisor";
 import { toast } from "sonner";
@@ -33,11 +34,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export function JournalEntryFeed() {
-  const { role } = useAccountantAuth();
+interface JournalEntryFeedProps {
+  businessId?: string;
+}
+
+export function JournalEntryFeed({ businessId }: JournalEntryFeedProps) {
+  useAccountantAuth();
   const { data, isLoading, dataUpdatedAt } = useAllJournalEntries({
     status: "draft",
     page_size: 50,
+    business_id: businessId,
   });
   const entries = data?.items;
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,6 +53,8 @@ export function JournalEntryFeed() {
   const [entryToPost, setEntryToPost] = useState<JournalEntryWithBusiness | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [entryToReview, setEntryToReview] = useState<JournalEntryWithBusiness | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [entryToEdit, setEntryToEdit] = useState<JournalEntryWithBusiness | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -81,6 +89,11 @@ export function JournalEntryFeed() {
   const handleView = (entry: JournalEntryWithBusiness) => {
     setSelectedEntry(entry);
     setQuickViewOpen(true);
+  };
+
+  const handleEditClick = (entry: JournalEntryWithBusiness) => {
+    setEntryToEdit(entry);
+    setEditModalOpen(true);
   };
 
   const handleAskForReviewClick = (entry: JournalEntryWithBusiness) => {
@@ -207,38 +220,6 @@ export function JournalEntryFeed() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {role === "accountant" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAskForReviewClick(entry)}
-                            disabled={askForReviewMutation.isPending}
-                          >
-                            {askForReviewMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <ClipboardCheck className="h-4 w-4 mr-1" />
-                                Ask for Review
-                              </>
-                            )}
-                          </Button>
-                        )}
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handlePostClick(entry)}
-                          disabled={postMutation.isPending}
-                        >
-                          {postMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Post
-                            </>
-                          )}
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -268,10 +249,25 @@ export function JournalEntryFeed() {
             setQuickViewOpen(false);
             handlePostClick(selectedEntry);
           }}
-          onAskForReview={role === "accountant" ? () => {
+          onAskForReview={() => {
             setQuickViewOpen(false);
             handleAskForReviewClick(selectedEntry);
-          } : undefined}
+          }}
+          onEdit={() => {
+            setQuickViewOpen(false);
+            handleEditClick(selectedEntry);
+          }}
+        />
+      )}
+
+      {entryToEdit && (
+        <JournalEntryEditModal
+          entry={entryToEdit}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onSuccess={() => {
+            setEntryToEdit(null);
+          }}
         />
       )}
 

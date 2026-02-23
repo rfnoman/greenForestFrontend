@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, memo, useCallback } from "react";
 import {
-  Send,
   Paperclip,
   X,
   FileIcon,
@@ -10,7 +9,6 @@ import {
   MessageSquare,
   WifiOff,
   Camera,
-  Image as ImageIcon,
   FileText,
   Loader2,
   CheckCircle2,
@@ -18,9 +16,9 @@ import {
   Bot,
   PanelLeftOpen,
   PanelLeftClose,
+  ArrowUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -29,6 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils/cn";
 import { useChat } from "@/lib/hooks/use-chat";
 import { useAuth } from "@/lib/hooks/use-auth";
@@ -64,7 +68,17 @@ const ChatInput = memo(function ChatInput({
   const [isSending, setIsSending] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [documentType, setDocumentType] = useState<"expense" | "income">("expense");
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + "px";
+    }
+  }, [input]);
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -151,131 +165,173 @@ const ChatInput = memo(function ChatInput({
     [input, uploadedFiles, isConnected, isSending, isProcessing, onSend, documentType]
   );
 
-  const getFileIcon = (file: File) => {
-    if (file.type.startsWith("image/")) {
-      return <ImageIcon className="h-4 w-4" />;
-    }
-    if (file.type === "application/pdf") {
-      return <FileText className="h-4 w-4" />;
-    }
-    return <FileIcon className="h-4 w-4" />;
-  };
-
   const hasUploadingFiles = uploadedFiles.some((f) => f.status === "uploading");
   const hasUploadedFiles = uploadedFiles.some((f) => f.status === "uploaded");
   const canSend = isConnected && !isSending && !isProcessing && !hasUploadingFiles && (input.trim() || hasUploadedFiles);
 
   return (
     <>
-      <div className="border-t p-4">
-        {uploadedFiles.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {uploadedFiles.map((uploadedFile) => (
-              <div
-                key={uploadedFile.id}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
-                  uploadedFile.status === "uploading" && "bg-muted",
-                  uploadedFile.status === "uploaded" && "bg-green-50 dark:bg-green-950",
-                  uploadedFile.status === "error" && "bg-red-50 dark:bg-red-950"
-                )}
-              >
-                {uploadedFile.status === "uploading" && (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-                {uploadedFile.status === "uploaded" && (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                )}
-                {uploadedFile.status === "error" && (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                )}
-                {getFileIcon(uploadedFile.file)}
-                <span className="max-w-[150px] truncate">{uploadedFile.file.name}</span>
+      <div className="px-4 pb-4 pt-2">
+        <div className="mx-auto max-w-3xl">
+          <div className="rounded-2xl border border-border bg-muted/30 shadow-sm transition-all focus-within:border-ring focus-within:shadow-md">
+            {/* Uploaded files preview - inside the box */}
+            {uploadedFiles.length > 0 && (
+              <div className="px-4 pt-3 pb-1 flex flex-wrap gap-2">
+                {uploadedFiles.map((uploadedFile) => (
+                  <div
+                    key={uploadedFile.id}
+                    className={cn(
+                      "relative group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm border",
+                      uploadedFile.status === "uploading" && "bg-muted border-border",
+                      uploadedFile.status === "uploaded" && "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
+                      uploadedFile.status === "error" && "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"
+                    )}
+                  >
+                    {uploadedFile.status === "uploading" && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    )}
+                    {uploadedFile.status === "uploaded" && (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                    )}
+                    {uploadedFile.status === "error" && (
+                      <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewFile(uploadedFile.file)}
+                      className="flex-shrink-0 rounded-md overflow-hidden border border-border hover:opacity-80 transition-opacity"
+                      title={uploadedFile.file.name}
+                    >
+                      {uploadedFile.file.type.startsWith("image/") ? (
+                        <img
+                          src={URL.createObjectURL(uploadedFile.file)}
+                          alt={uploadedFile.file.name}
+                          className="h-[52px] w-[52px] object-cover"
+                        />
+                      ) : (
+                        <div className="h-[52px] w-[52px] flex items-center justify-center bg-muted">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </button>
+                    <span className="max-w-[120px] truncate text-xs">{uploadedFile.file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(uploadedFile.id)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Textarea */}
+            <div className="px-4 pt-3">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                placeholder={
+                  isConnected
+                    ? hasUploadedFiles
+                      ? "Add a message or press send to process files..."
+                      : "Type a message or upload a receipt..."
+                    : "Connecting..."
+                }
+                className="w-full resize-none bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!isConnected}
+                rows={1}
+              />
+            </div>
+
+            {/* Bottom toolbar - inside the box */}
+            <div className="flex items-center justify-between px-3 py-2">
+              <div className="flex items-center gap-1">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+
                 <button
                   type="button"
-                  onClick={() => removeFile(uploadedFile.id)}
-                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!isConnected}
+                  className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Attach files"
                 >
-                  <X className="h-4 w-4" />
+                  <Paperclip className="h-4 w-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCameraModal(true)}
+                  disabled={!isConnected}
+                  className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Open camera"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Select
+                  value={documentType}
+                  onValueChange={(value: "expense" | "income") => setDocumentType(value)}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "h-7 w-auto gap-1.5 rounded-full px-3 text-xs font-semibold border focus:ring-0 focus:ring-offset-0 [&>svg]:h-3 [&>svg]:w-3",
+                      documentType === "expense"
+                        ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900"
+                        : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900"
+                    )}
+                  >
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      documentType === "expense" ? "bg-red-500" : "bg-emerald-500"
+                    )} />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    <SelectItem value="expense">Expense</SelectItem>
+                    <SelectItem value="income">Income</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <button
+                  type="button"
+                  onClick={() => handleSubmit()}
+                  disabled={!canSend}
+                  className={cn(
+                    "inline-flex items-center justify-center rounded-lg p-2 transition-all",
+                    canSend
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                      : "text-muted-foreground/50 cursor-not-allowed"
+                  )}
+                >
+                  {isSending || hasUploadingFiles ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowUp className="h-4 w-4" />
+                  )}
                 </button>
               </div>
-            ))}
+            </div>
           </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            className="hidden"
-            multiple
-            accept=".pdf,.jpg,.jpeg,.png"
-          />
-
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => setShowCameraModal(true)}
-            disabled={!isConnected}
-            title="Open camera"
-          >
-            <Camera className="h-4 w-4" />
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={!isConnected}
-            title="Attach files"
-          >
-            <Paperclip className="h-4 w-4" />
-          </Button>
-
-          <Select
-            value={documentType}
-            onValueChange={(value: "expense" | "income") => setDocumentType(value)}
-          >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="expense">Expense</SelectItem>
-              <SelectItem value="income">Income</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-            placeholder={
-              isConnected
-                ? hasUploadedFiles
-                  ? "Add a message or press send to process files..."
-                  : "Type a message or upload a receipt..."
-                : "Connecting..."
-            }
-            className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!isConnected}
-          />
-          <Button type="submit" size="icon" disabled={!canSend}>
-            {isSending || hasUploadingFiles ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
+        </div>
       </div>
 
       <CameraCapture
@@ -283,6 +339,37 @@ const ChatInput = memo(function ChatInput({
         onOpenChange={setShowCameraModal}
         onCapture={handleCameraCapture}
       />
+
+      <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="truncate">{previewFile?.name}</DialogTitle>
+          </DialogHeader>
+          {previewFile && (
+            <div className="flex items-center justify-center max-h-[70vh] overflow-auto">
+              {previewFile.type.startsWith("image/") ? (
+                <img
+                  src={URL.createObjectURL(previewFile)}
+                  alt={previewFile.name}
+                  className="max-w-full max-h-[65vh] object-contain rounded"
+                />
+              ) : previewFile.type === "application/pdf" ? (
+                <iframe
+                  src={URL.createObjectURL(previewFile)}
+                  title={previewFile.name}
+                  className="w-full h-[65vh] rounded"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                  <FileIcon className="h-12 w-12" />
+                  <p className="text-sm">{previewFile.name}</p>
+                  <p className="text-xs">Preview not available for this file type</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 });
@@ -312,31 +399,35 @@ const MessagesArea = memo(function MessagesArea({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, isProcessingFiles]);
 
-  // Show loading state whenever isLoading is true
   if (isLoading) {
     return (
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {/* Skeleton messages */}
+      <ScrollArea className="flex-1">
+        <div className="mx-auto max-w-3xl px-4 py-6 space-y-6">
           <div className="flex justify-end">
-            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 animate-pulse">
+            <div className="max-w-[75%] rounded-2xl bg-primary/10 px-4 py-3 animate-pulse">
               <div className="h-4 w-48 bg-muted-foreground/20 rounded" />
             </div>
           </div>
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 space-y-2 animate-pulse">
-              <div className="h-4 w-64 bg-muted-foreground/20 rounded" />
-              <div className="h-4 w-56 bg-muted-foreground/20 rounded" />
+            <div className="flex gap-3 max-w-[75%]">
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse flex-shrink-0" />
+              <div className="rounded-2xl bg-muted px-4 py-3 space-y-2 animate-pulse">
+                <div className="h-4 w-64 bg-muted-foreground/20 rounded" />
+                <div className="h-4 w-56 bg-muted-foreground/20 rounded" />
+              </div>
             </div>
           </div>
           <div className="flex justify-end">
-            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 animate-pulse">
+            <div className="max-w-[75%] rounded-2xl bg-primary/10 px-4 py-3 animate-pulse">
               <div className="h-4 w-40 bg-muted-foreground/20 rounded" />
             </div>
           </div>
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2 space-y-2 animate-pulse">
-              <div className="h-4 w-52 bg-muted-foreground/20 rounded" />
+            <div className="flex gap-3 max-w-[75%]">
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse flex-shrink-0" />
+              <div className="rounded-2xl bg-muted px-4 py-3 space-y-2 animate-pulse">
+                <div className="h-4 w-52 bg-muted-foreground/20 rounded" />
+              </div>
             </div>
           </div>
         </div>
@@ -347,64 +438,84 @@ const MessagesArea = memo(function MessagesArea({
   if (messages.length === 0 && !isTyping && !isProcessingFiles) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="mx-auto rounded-full bg-muted p-4 mb-4 w-fit">
-            <Bot className="h-8 w-8" />
+        <div className="text-center space-y-4">
+          <div className="mx-auto rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-5 w-fit">
+            <Bot className="h-10 w-10 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold">Bookkeeper Agent</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-            Upload receipts or type a message to start recording expenses
-          </p>
+          <div>
+            <h3 className="text-xl font-semibold tracking-tight">Bookkeeper Agent</h3>
+            <p className="text-sm text-muted-foreground mt-2 max-w-md">
+              Upload receipts or type a message to start recording expenses and income
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <ScrollArea className="flex-1 p-4">
-      <div className="space-y-4">
+    <ScrollArea className="flex-1">
+      <div className="mx-auto max-w-3xl px-4 py-6 space-y-5">
         {messages
-          .filter((message) => message.content.trim() !== "") // Only show messages with content
+          .filter((message) => message.content.trim() !== "")
           .map((message, index) => (
             <div
               key={index}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              className={cn(
+                "flex",
+                message.role === "user" ? "justify-end" : "justify-start"
+              )}
             >
-              <div
-                className={cn(
-                  "max-w-[80%] rounded-lg px-4 py-2",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                )}
-              >
-                {message.fileIds && message.fileIds.length > 0 && (
-                  <div className="flex items-center gap-1 mb-1 text-xs opacity-70">
-                    <Paperclip className="h-3 w-3" />
-                    <span>{message.fileIds.length} file(s) attached</span>
+              {message.role === "assistant" && (
+                <div className="flex gap-3 max-w-[75%]">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Bot className="h-4 w-4 text-primary" />
                   </div>
-                )}
-                <p className="whitespace-pre-wrap">{message.content}</p>
-              </div>
+                  <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-3">
+                    {message.fileIds && message.fileIds.length > 0 && (
+                      <div className="flex items-center gap-1 mb-1.5 text-xs text-muted-foreground">
+                        <Paperclip className="h-3 w-3" />
+                        <span>{message.fileIds.length} file(s) attached</span>
+                      </div>
+                    )}
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                  </div>
+                </div>
+              )}
+              {message.role === "user" && (
+                <div className="max-w-[75%] rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-4 py-3">
+                  {message.fileIds && message.fileIds.length > 0 && (
+                    <div className="flex items-center gap-1 mb-1.5 text-xs opacity-70">
+                      <Paperclip className="h-3 w-3" />
+                      <span>{message.fileIds.length} file(s) attached</span>
+                    </div>
+                  )}
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                </div>
+              )}
             </div>
           ))}
 
-        {/* Show loader when processing files or typing without content */}
         {(isProcessingFiles || (isTyping && messages[messages.length - 1]?.content.trim() === "")) && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2">
-              {isProcessingFiles ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Processing uploaded files...</span>
-                </div>
-              ) : (
-                <div className="flex space-x-1">
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.1s]" />
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.2s]" />
-                </div>
-              )}
+            <div className="flex gap-3 max-w-[75%]">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
+              <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-3">
+                {isProcessingFiles ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Processing uploaded files...</span>
+                  </div>
+                ) : (
+                  <div className="flex space-x-1.5 py-1">
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50" />
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:0.15s]" />
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:0.3s]" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -438,30 +549,26 @@ const SessionsSidebar = memo(function SessionsSidebar({
   return (
     <div className={cn(
       "flex-shrink-0 transition-all duration-300 ease-in-out",
-      isOpen ? "w-64" : "w-0"
+      isOpen ? "w-72" : "w-0"
     )}>
-      <Card className={cn(
-        "h-full flex-col overflow-hidden transition-all duration-300 rounded-none border-0 border-r",
-        isOpen ? "flex w-64" : "hidden"
+      <div className={cn(
+        "h-full flex-col overflow-hidden transition-all duration-300 border-r bg-muted/30",
+        isOpen ? "flex w-72" : "hidden"
       )}>
-        <CardHeader className="border-b p-3">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onToggle}
-              title="Close History"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </Button>
-            <CardTitle className="text-sm font-medium">History</CardTitle>
-          </div>
-        </CardHeader>
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <span className="text-sm font-medium">History</span>
+          <button
+            onClick={onToggle}
+            className="inline-flex items-center justify-center rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Close History"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        </div>
         <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
+          <div className="p-2 space-y-0.5">
             {sessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p className="text-sm text-muted-foreground text-center py-8">
                 No history yet
               </p>
             ) : (
@@ -470,7 +577,7 @@ const SessionsSidebar = memo(function SessionsSidebar({
                   key={session.id}
                   onClick={() => onLoadSession(session.id)}
                   className={cn(
-                    "w-full flex items-start gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
+                    "w-full flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
                     sessionId === session.id
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted"
@@ -478,10 +585,10 @@ const SessionsSidebar = memo(function SessionsSidebar({
                 >
                   <MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 overflow-hidden">
-                    <p className="truncate font-medium">{session.title || "New Chat"}</p>
+                    <p className="truncate font-medium text-[13px]">{session.title || "New Chat"}</p>
                     <p
                       className={cn(
-                        "text-xs",
+                        "text-xs mt-0.5",
                         sessionId === session.id
                           ? "text-primary-foreground/70"
                           : "text-muted-foreground"
@@ -495,7 +602,7 @@ const SessionsSidebar = memo(function SessionsSidebar({
             )}
           </div>
         </ScrollArea>
-      </Card>
+      </div>
     </div>
   );
 });
@@ -520,7 +627,6 @@ export default function UploadExpensePage() {
 
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  // Clear error after 5 seconds
   useEffect(() => {
     if (error) {
       const timer = setTimeout(clearError, 5000);
@@ -544,8 +650,8 @@ export default function UploadExpensePage() {
   }, []);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      {/* Sessions Sidebar - Left Side */}
+    <div className="flex h-[calc(100vh-4rem)] bg-background">
+      {/* Sessions Sidebar */}
       <SessionsSidebar
         sessions={sessions}
         sessionId={sessionId}
@@ -555,77 +661,79 @@ export default function UploadExpensePage() {
       />
 
       {/* Main Chat Area */}
-      <Card className="flex flex-1 flex-col rounded-none border-0 border-l">
-        <CardHeader className="border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {!historyOpen && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleHistory}
-                  title="Open History"
-                >
-                  <PanelLeftOpen className="h-4 w-4" />
-                </Button>
-              )}
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-3">
+            {!historyOpen && (
+              <button
+                onClick={toggleHistory}
+                className="inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="Open History"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+            )}
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
               <div>
-                <CardTitle>Bookkeeper Agent</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Upload receipts and record expenses with AI assistance
-                </p>
+                <h1 className="text-sm font-semibold leading-none">Bookkeeper Agent</h1>
+                <div className="flex items-center gap-1.5 mt-1">
+                  {isConnected ? (
+                    <>
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      <span className="text-[11px] text-muted-foreground">Online</span>
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-3 w-3 text-destructive" />
+                      <span className="text-[11px] text-destructive">Disconnected</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {!isConnected && (
-                <div className="flex items-center gap-1 text-sm text-destructive">
-                  <WifiOff className="h-4 w-4" />
-                  <span>Disconnected</span>
-                </div>
-              )}
-              {isConnected && (
-                <div className="flex items-center gap-1 text-sm text-green-600">
-                  <span className="h-2 w-2 rounded-full bg-green-600" />
-                  <span>Connected</span>
-                </div>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNewSession}
-                disabled={!isConnected}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                New
-              </Button>
-            </div>
           </div>
-        </CardHeader>
-        <CardContent className="flex flex-1 flex-col p-0 overflow-hidden">
-          {error && (
-            <div className="bg-destructive/10 text-destructive px-4 py-2 text-sm flex items-center justify-between">
-              <span>{error}</span>
-              <button onClick={clearError} className="hover:opacity-70">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNewSession}
+            disabled={!isConnected}
+            className="rounded-lg h-8 text-xs"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            New Chat
+          </Button>
+        </div>
 
-          <MessagesArea
-            messages={messages}
-            isTyping={isTyping}
-            isProcessingFiles={isProcessingFiles}
-            isLoading={isLoading}
-          />
+        {/* Error banner */}
+        {error && (
+          <div className="bg-destructive/10 text-destructive px-4 py-2 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={clearError} className="hover:opacity-70">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
-          <ChatInput
-            onSend={sendMessage}
-            isConnected={isConnected}
-            isProcessing={isTyping || isProcessingFiles}
-            sessionId={sessionId}
-          />
-        </CardContent>
-      </Card>
+        {/* Messages */}
+        <MessagesArea
+          messages={messages}
+          isTyping={isTyping}
+          isProcessingFiles={isProcessingFiles}
+          isLoading={isLoading}
+        />
+
+        {/* Chat Input */}
+        <ChatInput
+          onSend={sendMessage}
+          isConnected={isConnected}
+          isProcessing={isTyping || isProcessingFiles}
+          sessionId={sessionId}
+        />
+      </div>
     </div>
   );
 }
