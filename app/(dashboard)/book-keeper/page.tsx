@@ -35,11 +35,15 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils/cn";
 import { useChat } from "@/lib/hooks/use-chat";
+import type { JournalEntrySummaryData, UserOptionsData } from "@/lib/hooks/use-chat";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useBusiness } from "@/lib/hooks/use-business";
 import { formatDistanceToNow } from "date-fns";
 import { uploadChatFile } from "@/lib/api/chat-files";
 import { CameraCapture } from "@/components/shared/camera-capture";
+import { JournalEntryCard } from "@/components/chat/journal-entry-card";
+import { UserOptionsButtons } from "@/components/chat/user-options-buttons";
+import { MarkdownContent } from "@/components/chat/markdown-content";
 import type { ChatAttachmentUploadResponse } from "@/lib/types";
 
 interface UploadedFile {
@@ -67,7 +71,7 @@ const ChatInput = memo(function ChatInput({
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
-  const [documentType, setDocumentType] = useState<"expense" | "income">("expense");
+  const [documentType, setDocumentType] = useState<"asset" | "liability" | "equity" | "revenue" | "expense">("expense");
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -289,25 +293,34 @@ const ChatInput = memo(function ChatInput({
               <div className="flex items-center gap-2">
                 <Select
                   value={documentType}
-                  onValueChange={(value: "expense" | "income") => setDocumentType(value)}
+                  onValueChange={(value) => setDocumentType(value as "asset" | "liability" | "equity" | "revenue" | "expense")}
                 >
                   <SelectTrigger
                     className={cn(
                       "h-7 w-auto gap-1.5 rounded-full px-3 text-xs font-semibold border focus:ring-0 focus:ring-offset-0 [&>svg]:h-3 [&>svg]:w-3",
-                      documentType === "expense"
-                        ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900"
+                      documentType === "expense" && "bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900",
+                      documentType === "revenue" && "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900",
+                      documentType === "asset" && "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900",
+                      documentType === "liability" && "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-900",
+                      documentType === "equity" && "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-900",
                     )}
                   >
                     <span className={cn(
                       "h-1.5 w-1.5 rounded-full",
-                      documentType === "expense" ? "bg-red-500" : "bg-emerald-500"
+                      documentType === "expense" && "bg-red-500",
+                      documentType === "revenue" && "bg-emerald-500",
+                      documentType === "asset" && "bg-blue-500",
+                      documentType === "liability" && "bg-orange-500",
+                      documentType === "equity" && "bg-purple-500",
                     )} />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent align="end">
+                    <SelectItem value="asset">Asset</SelectItem>
+                    <SelectItem value="liability">Liability</SelectItem>
+                    <SelectItem value="equity">Equity</SelectItem>
+                    <SelectItem value="revenue">Revenue</SelectItem>
                     <SelectItem value="expense">Expense</SelectItem>
-                    <SelectItem value="income">Income</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -378,6 +391,9 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   fileIds?: string[];
+  type?: "text" | "tool_progress" | "journal_entry" | "user_options";
+  data?: JournalEntrySummaryData | UserOptionsData;
+  selectedOption?: string;
 }
 
 interface MessagesAreaProps {
@@ -385,6 +401,7 @@ interface MessagesAreaProps {
   isTyping: boolean;
   isProcessingFiles: boolean;
   isLoading: boolean;
+  onSelectOption?: (messageIndex: number, option: string) => void;
 }
 
 const MessagesArea = memo(function MessagesArea({
@@ -392,6 +409,7 @@ const MessagesArea = memo(function MessagesArea({
   isTyping,
   isProcessingFiles,
   isLoading,
+  onSelectOption,
 }: MessagesAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -457,16 +475,78 @@ const MessagesArea = memo(function MessagesArea({
     <ScrollArea className="flex-1">
       <div className="mx-auto max-w-3xl px-4 py-6 space-y-5">
         {messages
-          .filter((message) => message.content.trim() !== "")
-          .map((message, index) => (
-            <div
-              key={index}
-              className={cn(
-                "flex",
-                message.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              {message.role === "assistant" && (
+          .filter((message) => message.content.trim() !== "" || message.type === "journal_entry" || message.type === "user_options")
+          .map((message, index) => {
+            // Tool progress messages: smaller, muted inline items
+            if (message.type === "tool_progress") {
+              return (
+                <div key={index} className="flex justify-start">
+                  <div className="flex gap-3 max-w-[75%]">
+                    <div className="w-8 flex-shrink-0" />
+                    <div className="rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
+                      <MarkdownContent content={message.content} />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Journal entry summary card
+            if (message.type === "journal_entry" && message.data) {
+              return (
+                <div key={index} className="flex justify-start">
+                  <div className="flex gap-3 max-w-[85%]">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <JournalEntryCard data={message.data as JournalEntrySummaryData} />
+                  </div>
+                </div>
+              );
+            }
+
+            // User options buttons
+            if (message.type === "user_options" && message.data) {
+              const optionsData = message.data as UserOptionsData;
+              const realIndex = messages.indexOf(message);
+              return (
+                <div key={index} className="flex justify-start">
+                  <div className="flex gap-3 max-w-[75%]">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-3">
+                      <UserOptionsButtons
+                        data={optionsData}
+                        selectedOption={message.selectedOption}
+                        onSelect={(option) => onSelectOption?.(realIndex, option)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // User message (unchanged)
+            if (message.role === "user") {
+              return (
+                <div key={index} className={cn("flex", "justify-end")}>
+                  <div className="max-w-[75%] rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-4 py-3">
+                    {message.fileIds && message.fileIds.length > 0 && (
+                      <div className="flex items-center gap-1 mb-1.5 text-xs opacity-70">
+                        <Paperclip className="h-3 w-3" />
+                        <span>{message.fileIds.length} file(s) attached</span>
+                      </div>
+                    )}
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                  </div>
+                </div>
+              );
+            }
+
+            // Standard assistant text message with markdown
+            return (
+              <div key={index} className={cn("flex", "justify-start")}>
                 <div className="flex gap-3 max-w-[75%]">
                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Bot className="h-4 w-4 text-primary" />
@@ -478,23 +558,14 @@ const MessagesArea = memo(function MessagesArea({
                         <span>{message.fileIds.length} file(s) attached</span>
                       </div>
                     )}
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                    <div className="text-sm leading-relaxed">
+                      <MarkdownContent content={message.content} />
+                    </div>
                   </div>
                 </div>
-              )}
-              {message.role === "user" && (
-                <div className="max-w-[75%] rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-4 py-3">
-                  {message.fileIds && message.fileIds.length > 0 && (
-                    <div className="flex items-center gap-1 mb-1.5 text-xs opacity-70">
-                      <Paperclip className="h-3 w-3" />
-                      <span>{message.fileIds.length} file(s) attached</span>
-                    </div>
-                  )}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
 
         {(isProcessingFiles || (isTyping && messages[messages.length - 1]?.content.trim() === "")) && (
           <div className="flex justify-start">
@@ -623,6 +694,7 @@ export default function UploadExpensePage() {
     loadSession,
     newSession,
     clearError,
+    selectOption,
   } = useChat(accessToken, currentBusiness?.id ?? null);
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -724,6 +796,7 @@ export default function UploadExpensePage() {
           isTyping={isTyping}
           isProcessingFiles={isProcessingFiles}
           isLoading={isLoading}
+          onSelectOption={selectOption}
         />
 
         {/* Chat Input */}

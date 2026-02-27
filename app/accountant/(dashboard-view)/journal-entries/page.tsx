@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, ArrowUpDown, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpDown, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
@@ -272,12 +272,11 @@ export default function AccountantJournalEntriesPage() {
                       <TableHead>Status</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {entries.map((entry) => (
-                      <TableRow key={entry.id}>
+                      <TableRow key={entry.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleView(entry)}>
                         <TableCell>{formatDate(entry.entry_date)}</TableCell>
                         <TableCell className="font-medium">{entry.entry_number}</TableCell>
                         <TableCell>{entry.business_name}</TableCell>
@@ -287,13 +286,6 @@ export default function AccountantJournalEntriesPage() {
                         </TableCell>
                         <TableCell className="font-medium">
                           {formatCurrency(calculateTotal(entry), "USD")}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleView(entry)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -13,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
@@ -193,13 +192,12 @@ export function JournalEntryFeed({ businessId }: JournalEntryFeedProps) {
                 <TableHead>Business</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEntries && filteredEntries.length > 0 ? (
                 filteredEntries.map((entry) => (
-                  <TableRow key={entry.id}>
+                  <TableRow key={entry.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleView(entry)}>
                     <TableCell>{formatDate(entry.entry_date)}</TableCell>
                     <TableCell className="font-medium">{entry.entry_number}</TableCell>
                     <TableCell>
@@ -211,22 +209,11 @@ export function JournalEntryFeed({ businessId }: JournalEntryFeedProps) {
                     <TableCell className="text-right font-medium">
                       {formatCurrency(calculateTotal(entry), "USD")}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleView(entry)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     No entries found matching your search
                   </TableCell>
                 </TableRow>

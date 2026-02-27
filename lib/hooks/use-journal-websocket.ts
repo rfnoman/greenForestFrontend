@@ -21,10 +21,16 @@ export interface JournalFeedEntry {
   lines: JournalEntryLine[];
   created_by: string | null;
   created_at: string;
+  created_by_actor_type: "user" | "ai_agent" | "system" | null;
+  created_by_name: string | null;
+  reviewed_by: string | null;
+  reviewed_by_name: string | null;
+  posted_by: string | null;
+  posted_by_name: string | null;
 }
 
 interface WSMessage {
-  type: "connection_established" | "journal_entry_posted";
+  type: "connection_established" | "journal_entry_posted" | "journal_entry_created" | "journal_entry_ask_for_review";
   message?: string;
   entry?: JournalFeedEntry;
 }
@@ -74,9 +80,14 @@ export function useJournalWebSocket(accessToken: string | null) {
 
         if (data.type === "connection_established") {
           setStatus("connected");
-        } else if (data.type === "journal_entry_posted" && data.entry) {
+        } else if (
+          (data.type === "journal_entry_posted" ||
+            data.type === "journal_entry_created" ||
+            data.type === "journal_entry_ask_for_review") &&
+          data.entry
+        ) {
           setEntries((prev) => {
-            const updated = [data.entry!, ...prev];
+            const updated = [data.entry!, ...prev.filter((e) => e.id !== data.entry!.id)];
             return updated.slice(0, MAX_ENTRIES);
           });
         }

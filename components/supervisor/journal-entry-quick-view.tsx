@@ -41,6 +41,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supervisorApi } from "@/lib/api/supervisor";
 import type { JournalEntryWithBusiness } from "@/lib/types";
+import { ActivityInfo } from "@/components/shared/journal-entry-activity";
 
 interface JournalEntryQuickViewProps {
   entry: JournalEntryWithBusiness;
@@ -136,6 +137,12 @@ export function JournalEntryQuickView({
                 <span className="text-muted-foreground">Business:</span>
                 <div className="font-medium">{entry.business_name}</div>
               </div>
+            </div>
+
+            {/* Activity / Actions By */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Activity</h4>
+              <ActivityInfo entry={entry} />
             </div>
 
             {/* Chat Session / Source Context */}
