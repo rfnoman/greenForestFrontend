@@ -35,11 +35,15 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils/cn";
 import { useChat } from "@/lib/hooks/use-chat";
+import type { JournalEntrySummaryData, UserOptionsData } from "@/lib/hooks/use-chat";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useBusiness } from "@/lib/hooks/use-business";
 import { formatDistanceToNow } from "date-fns";
 import { uploadChatFile } from "@/lib/api/chat-files";
 import { CameraCapture } from "@/components/shared/camera-capture";
+import { JournalEntryCard } from "@/components/chat/journal-entry-card";
+import { UserOptionsButtons } from "@/components/chat/user-options-buttons";
+import { MarkdownContent } from "@/components/chat/markdown-content";
 import type { ChatAttachmentUploadResponse } from "@/lib/types";
 
 interface UploadedFile {
@@ -387,6 +391,9 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   fileIds?: string[];
+  type?: "text" | "tool_progress" | "journal_entry" | "user_options";
+  data?: JournalEntrySummaryData | UserOptionsData;
+  selectedOption?: string;
 }
 
 interface MessagesAreaProps {
@@ -394,6 +401,7 @@ interface MessagesAreaProps {
   isTyping: boolean;
   isProcessingFiles: boolean;
   isLoading: boolean;
+  onSelectOption?: (messageIndex: number, option: string) => void;
 }
 
 const MessagesArea = memo(function MessagesArea({
@@ -401,6 +409,7 @@ const MessagesArea = memo(function MessagesArea({
   isTyping,
   isProcessingFiles,
   isLoading,
+  onSelectOption,
 }: MessagesAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -466,16 +475,78 @@ const MessagesArea = memo(function MessagesArea({
     <ScrollArea className="flex-1">
       <div className="mx-auto max-w-3xl px-4 py-6 space-y-5">
         {messages
-          .filter((message) => message.content.trim() !== "")
-          .map((message, index) => (
-            <div
-              key={index}
-              className={cn(
-                "flex",
-                message.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              {message.role === "assistant" && (
+          .filter((message) => message.content.trim() !== "" || message.type === "journal_entry" || message.type === "user_options")
+          .map((message, index) => {
+            // Tool progress messages: smaller, muted inline items
+            if (message.type === "tool_progress") {
+              return (
+                <div key={index} className="flex justify-start">
+                  <div className="flex gap-3 max-w-[75%]">
+                    <div className="w-8 flex-shrink-0" />
+                    <div className="rounded-lg bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
+                      <MarkdownContent content={message.content} />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Journal entry summary card
+            if (message.type === "journal_entry" && message.data) {
+              return (
+                <div key={index} className="flex justify-start">
+                  <div className="flex gap-3 max-w-[85%]">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <JournalEntryCard data={message.data as JournalEntrySummaryData} />
+                  </div>
+                </div>
+              );
+            }
+
+            // User options buttons
+            if (message.type === "user_options" && message.data) {
+              const optionsData = message.data as UserOptionsData;
+              const realIndex = messages.indexOf(message);
+              return (
+                <div key={index} className="flex justify-start">
+                  <div className="flex gap-3 max-w-[75%]">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-3">
+                      <UserOptionsButtons
+                        data={optionsData}
+                        selectedOption={message.selectedOption}
+                        onSelect={(option) => onSelectOption?.(realIndex, option)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // User message (unchanged)
+            if (message.role === "user") {
+              return (
+                <div key={index} className={cn("flex", "justify-end")}>
+                  <div className="max-w-[75%] rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-4 py-3">
+                    {message.fileIds && message.fileIds.length > 0 && (
+                      <div className="flex items-center gap-1 mb-1.5 text-xs opacity-70">
+                        <Paperclip className="h-3 w-3" />
+                        <span>{message.fileIds.length} file(s) attached</span>
+                      </div>
+                    )}
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                  </div>
+                </div>
+              );
+            }
+
+            // Standard assistant text message with markdown
+            return (
+              <div key={index} className={cn("flex", "justify-start")}>
                 <div className="flex gap-3 max-w-[75%]">
                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Bot className="h-4 w-4 text-primary" />
@@ -487,23 +558,14 @@ const MessagesArea = memo(function MessagesArea({
                         <span>{message.fileIds.length} file(s) attached</span>
                       </div>
                     )}
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                    <div className="text-sm leading-relaxed">
+                      <MarkdownContent content={message.content} />
+                    </div>
                   </div>
                 </div>
-              )}
-              {message.role === "user" && (
-                <div className="max-w-[75%] rounded-2xl rounded-tr-md bg-primary text-primary-foreground px-4 py-3">
-                  {message.fileIds && message.fileIds.length > 0 && (
-                    <div className="flex items-center gap-1 mb-1.5 text-xs opacity-70">
-                      <Paperclip className="h-3 w-3" />
-                      <span>{message.fileIds.length} file(s) attached</span>
-                    </div>
-                  )}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
 
         {(isProcessingFiles || (isTyping && messages[messages.length - 1]?.content.trim() === "")) && (
           <div className="flex justify-start">
@@ -632,6 +694,7 @@ export default function UploadExpensePage() {
     loadSession,
     newSession,
     clearError,
+    selectOption,
   } = useChat(accessToken, currentBusiness?.id ?? null);
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -733,6 +796,7 @@ export default function UploadExpensePage() {
           isTyping={isTyping}
           isProcessingFiles={isProcessingFiles}
           isLoading={isLoading}
+          onSelectOption={selectOption}
         />
 
         {/* Chat Input */}

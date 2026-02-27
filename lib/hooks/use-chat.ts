@@ -3,10 +3,40 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { ExtractedReceiptData } from "@/lib/types";
 
-interface ChatMessage {
+export type ChatMessageType = "text" | "tool_progress" | "journal_entry" | "user_options";
+
+export interface JournalEntrySummaryData {
+  id?: string;
+  entry_number: string;
+  status: string;
+  entry_date: string;
+  description: string | null;
+  contact: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
+  lines: {
+    account_code: string;
+    account_name: string;
+    description?: string | null;
+    debit: string;
+    credit: string;
+  }[];
+}
+
+export interface UserOptionsData {
+  question: string;
+  options: string[];
+}
+
+export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   fileIds?: string[];
+  type?: ChatMessageType;
+  data?: JournalEntrySummaryData | UserOptionsData;
+  selectedOption?: string;
 }
 
 interface ChatSession {
@@ -28,7 +58,15 @@ interface WebSocketMessage {
   content?: string;
   session_id?: string;
   title?: string;
-  messages?: ChatMessage[];
+  messages?: Array<{
+    role: "user" | "assistant";
+    content: string;
+    file_ids?: string[];
+    fileIds?: string[];
+    type?: ChatMessageType;
+    data?: JournalEntrySummaryData | UserOptionsData;
+    selected_option?: string;
+  }>;
   sessions?: ChatSession[];
   file_ids?: string[];
   file_id?: string;
@@ -36,6 +74,9 @@ interface WebSocketMessage {
   extracted_data?: ExtractedReceiptData;
   error?: string;
   tools_enabled?: boolean;
+  data?: JournalEntrySummaryData | UserOptionsData | Record<string, unknown>;
+  question?: string;
+  options?: string[];
 }
 
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
@@ -224,13 +265,68 @@ export function useChat(token: string | null, businessId: string | null) {
             }
             break;
 
-          case "response_end":
+          case "response_end": {
             setIsTyping(false);
             setIsProcessingFiles(false);
+            // Reclassify the last message as tool_progress if it starts with emoji prefixes
+            const toolProgressEmojis = ["🔍", "✅", "❌", "📂", "📝", "⚠️", "🔄", "💾"];
+            setMessages((prev) => {
+              const updated = [...prev];
+              const lastIdx = updated.length - 1;
+              if (lastIdx >= 0 && updated[lastIdx].role === "assistant" && !updated[lastIdx].type) {
+                const content = updated[lastIdx].content.trim();
+                const isToolProgress = toolProgressEmojis.some((emoji) => content.startsWith(emoji));
+                if (isToolProgress) {
+                  updated[lastIdx] = { ...updated[lastIdx], type: "tool_progress" };
+                } else {
+                  updated[lastIdx] = { ...updated[lastIdx], type: "text" };
+                }
+              }
+              return updated;
+            });
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(JSON.stringify({ type: "list_sessions" }));
             }
             break;
+          }
+
+          case "journal_entry_summary": {
+            const jeData = (data.data || data) as Record<string, unknown>;
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "",
+                type: "journal_entry",
+                data: {
+                  id: jeData.id as string | undefined,
+                  entry_number: jeData.entry_number as string,
+                  status: jeData.status as string,
+                  entry_date: jeData.entry_date as string,
+                  description: (jeData.description as string) || null,
+                  contact: (jeData.contact as JournalEntrySummaryData["contact"]) || null,
+                  lines: (jeData.lines as JournalEntrySummaryData["lines"]) || [],
+                } as JournalEntrySummaryData,
+              },
+            ]);
+            break;
+          }
+
+          case "user_options": {
+            const uoData = (data.data || data) as Record<string, unknown>;
+            const question = (uoData.question as string) || "";
+            const options = (uoData.options as string[]) || [];
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: question,
+                type: "user_options",
+                data: { question, options } as UserOptionsData,
+              },
+            ]);
+            break;
+          }
 
           case "session_created":
             if (data.session_id) {
@@ -242,7 +338,14 @@ export function useChat(token: string | null, businessId: string | null) {
 
           case "session_loaded":
             if (data.messages) {
-              setMessages(data.messages);
+              setMessages(data.messages.map((msg) => ({
+                role: msg.role,
+                content: msg.content || "",
+                fileIds: msg.file_ids || msg.fileIds,
+                type: msg.type || "text",
+                data: msg.data,
+                selectedOption: msg.selected_option,
+              })));
             }
             if (data.session_id) {
               setSessionId(data.session_id);
@@ -368,6 +471,18 @@ export function useChat(token: string | null, businessId: string | null) {
     setProcessingFiles([]);
   }, []);
 
+  const selectOption = useCallback((messageIndex: number, option: string) => {
+    setMessages((prev) => {
+      const updated = [...prev];
+      if (updated[messageIndex]?.type === "user_options") {
+        updated[messageIndex] = { ...updated[messageIndex], selectedOption: option };
+      }
+      return updated;
+    });
+    // Send the selected option as a regular chat message
+    sendMessage(option);
+  }, [sendMessage]);
+
   return {
     messages,
     sessions,
@@ -384,5 +499,6 @@ export function useChat(token: string | null, businessId: string | null) {
     listSessions,
     clearError,
     clearProcessingFiles,
+    selectOption,
   };
 }
