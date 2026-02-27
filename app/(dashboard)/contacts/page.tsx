@@ -80,6 +80,7 @@ export default function ContactsPage() {
           <a
             href={`mailto:${row.original.email}`}
             className="flex items-center text-sm text-muted-foreground hover:text-foreground"
+            onClick={(e) => e.stopPropagation()}
           >
             <Mail className="h-3 w-3 mr-1" />
             {row.original.email}
@@ -96,6 +97,7 @@ export default function ContactsPage() {
           <a
             href={`tel:${row.original.phone}`}
             className="flex items-center text-sm text-muted-foreground hover:text-foreground"
+            onClick={(e) => e.stopPropagation()}
           >
             <Phone className="h-3 w-3 mr-1" />
             {row.original.phone}
@@ -116,6 +118,7 @@ export default function ContactsPage() {
     {
       id: "actions",
       cell: ({ row }) => (
+        <div onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -136,6 +139,7 @@ export default function ContactsPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       ),
     },
   ];
@@ -187,6 +191,7 @@ export default function ContactsPage() {
             data={contacts || []}
             searchKey="name"
             searchPlaceholder="Search contacts..."
+            onRowClick={(contact) => setEditContact(contact)}
           />
         </TabsContent>
       </Tabs>

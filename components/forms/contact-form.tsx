@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Form,
   FormControl,
@@ -60,6 +60,7 @@ export function ContactFormDialog({
           contact_type: contact.contact_type,
           billing_address: contact.billing_address || {},
           tax_id: contact.tax_id || "",
+          website: contact.website || "",
           notes: contact.notes || "",
         }
       : {
@@ -69,6 +70,7 @@ export function ContactFormDialog({
           contact_type: "customer",
           billing_address: {},
           tax_id: "",
+          website: "",
           notes: "",
         },
   });
@@ -82,6 +84,7 @@ export function ContactFormDialog({
         email: data.email || undefined,
         phone: data.phone || undefined,
         tax_id: data.tax_id || undefined,
+        website: data.website || undefined,
         notes: data.notes || undefined,
         billing_address: Object.values(data.billing_address || {}).some(Boolean)
           ? data.billing_address
@@ -106,16 +109,16 @@ export function ContactFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{contact ? "Edit Contact" : "Create Contact"}</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-[500px] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{contact ? "Edit Contact" : "Create Contact"}</SheetTitle>
+          <SheetDescription>
             {contact
               ? "Update the contact details below."
               : "Add a new customer or vendor."}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs defaultValue="general">
@@ -208,6 +211,19 @@ export function ContactFormDialog({
                 />
                 <FormField
                   control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
@@ -223,25 +239,12 @@ export function ContactFormDialog({
               <TabsContent value="address" className="space-y-4 mt-4">
                 <FormField
                   control={form.control}
-                  name="billing_address.line1"
+                  name="billing_address.street"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address Line 1</FormLabel>
+                      <FormLabel>Street Address</FormLabel>
                       <FormControl>
                         <Input placeholder="123 Main St" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="billing_address.line2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address Line 2</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Suite 100" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -278,10 +281,10 @@ export function ContactFormDialog({
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="billing_address.postal_code"
+                    name="billing_address.zip"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Postal Code</FormLabel>
+                        <FormLabel>Zip Code</FormLabel>
                         <FormControl>
                           <Input placeholder="10001" {...field} />
                         </FormControl>
@@ -306,7 +309,7 @@ export function ContactFormDialog({
               </TabsContent>
             </Tabs>
 
-            <DialogFooter>
+            <SheetFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -318,10 +321,10 @@ export function ContactFormDialog({
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {contact ? "Update" : "Create"}
               </Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -53,9 +53,11 @@ export interface BusinessMember {
 export interface Address {
   line1?: string;
   line2?: string;
+  street?: string;
   city?: string;
   state?: string;
   postal_code?: string;
+  zip?: string;
   country?: string;
 }
 
@@ -89,6 +91,7 @@ export interface Contact {
   billing_address: Address | null;
   shipping_address: Address | null;
   tax_id: string | null;
+  website: string | null;
   notes: string | null;
   is_active: boolean;
   created_at: string;
@@ -233,6 +236,14 @@ export interface JournalEntryContact {
   type: ContactType;
 }
 
+export type ActorType = 'user' | 'ai_agent' | 'system';
+
+export interface ActorRef {
+  id: string;
+  email: string;
+  full_name: string;
+}
+
 export interface ChatSessionRef {
   id: string;
   title: string;
@@ -253,13 +264,18 @@ export interface JournalEntry {
   chat_session: ChatSessionRef | null;
   lines: JournalEntryLine[];
   created_at: string;
+  created_by: ActorRef | null;
+  created_by_actor_type: ActorType | null;
+  reviewed_by: ActorRef | null;
+  reviewed_at: string | null;
+  posted_by: ActorRef | null;
+  voided_by: ActorRef | null;
 }
 
 // Journal Entry with Business Context (for accountant/supervisor views)
 export interface JournalEntryWithBusiness extends JournalEntry {
   business_id: string;
   business_name: string;
-  reviewed_at: string | null;
 }
 
 // Bank Account
@@ -644,6 +660,7 @@ export interface CreateContactInput {
   billing_address?: Address;
   shipping_address?: Address;
   tax_id?: string;
+  website?: string;
   notes?: string;
 }
 

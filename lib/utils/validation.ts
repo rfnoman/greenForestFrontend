@@ -93,9 +93,11 @@ export const contactSchema = z.object({
     .object({
       line1: z.string().optional(),
       line2: z.string().optional(),
+      street: z.string().optional(),
       city: z.string().optional(),
       state: z.string().optional(),
       postal_code: z.string().optional(),
+      zip: z.string().optional(),
       country: z.string().optional(),
     })
     .optional(),
@@ -103,13 +105,16 @@ export const contactSchema = z.object({
     .object({
       line1: z.string().optional(),
       line2: z.string().optional(),
+      street: z.string().optional(),
       city: z.string().optional(),
       state: z.string().optional(),
       postal_code: z.string().optional(),
+      zip: z.string().optional(),
       country: z.string().optional(),
     })
     .optional(),
   tax_id: z.string().optional(),
+  website: z.string().optional(),
   notes: z.string().optional(),
 });
 
