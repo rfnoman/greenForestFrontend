@@ -74,4 +74,11 @@
   .glass-input {
     @apply bg-white/50 dark:bg-gray-900/40 backdrop-blur-sm border border-white/30 dark:border-white/15;
   }
+  .scrollbar-thin {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    display: none;
+  }
 }

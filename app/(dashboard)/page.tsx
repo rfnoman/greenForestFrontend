@@ -1,11 +1,14 @@
 "use client";
 
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   Banknote,
   Building2,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   DollarSign,
   FileText,
@@ -156,7 +159,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Row 1 - KPI Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <KPIScrollRow>
         <KPICard
           title="Cash Balance"
           value={formatCurrency(dashboard?.cash_balance || "0", currency)}
@@ -219,7 +222,7 @@ export default function DashboardPage() {
               : "text-red-600"
           }
         />
-      </div>
+      </KPIScrollRow>
 
       {/* Row 2 - Charts */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -269,6 +272,65 @@ export default function DashboardPage() {
   );
 }
 
+// ── KPI Scroll Row ───────────────────────────────────────────
+
+function KPIScrollRow({ children }: { children: React.ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(checkScroll);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checkScroll]);
+
+  const scroll = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.6;
+    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative">
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-md border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
+      <div
+        ref={scrollRef}
+        onScroll={checkScroll}
+        className="flex gap-4 overflow-x-auto scrollbar-thin"
+      >
+        {children}
+      </div>
+      {canScrollRight && (
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-md border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── KPI Card ──────────────────────────────────────────────────
 
 function KPICard({
@@ -285,15 +347,15 @@ function KPICard({
   badge?: string;
 }) {
   return (
-    <Card>
+    <Card className="min-w-[180px] flex-shrink-0">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium whitespace-nowrap">{title}</CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
-        <div className={`text-2xl font-bold ${colorClass}`}>{value}</div>
+        <div className={`text-2xl font-bold whitespace-nowrap ${colorClass}`}>{value}</div>
         {badge && (
-          <Badge variant="destructive" className="mt-2 text-xs">
+          <Badge variant="destructive" className="mt-2 text-xs whitespace-nowrap">
             {badge}
           </Badge>
         )}
@@ -1106,9 +1168,9 @@ function DashboardSkeleton() {
         <Skeleton className="h-9 w-48" />
         <Skeleton className="h-4 w-72 mt-2" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
         {[...Array(6)].map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="min-w-[180px] flex-shrink-0">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-24" />
             </CardHeader>
