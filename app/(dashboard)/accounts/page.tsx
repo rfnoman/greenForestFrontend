@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, FileText } from "lucide-react";
 import { useAccounts } from "@/lib/hooks/use-accounts";
+import { useBusiness } from "@/lib/hooks/use-business";
 import { ACCOUNT_TYPES } from "@/lib/constants";
+import { formatCurrency } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -153,6 +155,8 @@ export default function AccountsPage() {
 
 function AccountList({ accounts }: { accounts: Account[] }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const { currentBusiness } = useBusiness();
+  const currency = currentBusiness?.currency || "USD";
 
   const tree = useMemo(() => buildAccountTree(accounts), [accounts]);
 
@@ -214,13 +218,28 @@ function AccountList({ accounts }: { accounts: Account[] }) {
               )}
             </a>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {node.opening_balance != null && node.opening_balance !== 0 && (
+              <span className="text-sm text-muted-foreground">
+                OB: {formatCurrency(node.opening_balance, currency)}
+                {node.opening_balance_date && (
+                  <span className="ml-1">({new Date(node.opening_balance_date).toLocaleDateString()})</span>
+                )}
+              </span>
+            )}
             {node.is_system && (
               <Badge variant="secondary">System</Badge>
             )}
             {!node.is_active && (
               <Badge variant="outline">Inactive</Badge>
             )}
+            <a
+              href={`/accounts/${node.id}/statement`}
+              className="p-1 rounded hover:bg-muted"
+              title="View Statement"
+            >
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </a>
             <a href={`/accounts/${node.id}`}>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </a>

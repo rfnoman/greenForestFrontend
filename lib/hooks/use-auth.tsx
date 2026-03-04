@@ -142,8 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fetch user data to check user type
     const userData = await authApi.getMe();
 
-    // Only allow owner and manager to login
-    if (userData.user_type === 'accountant') {
+    // Only allow owner and manager to login to this portal
+    if (userData.user_type === 'accountant' || userData.user_type === 'accountant_supervisor') {
       clearAuth();
       throw new Error('Access denied. Only owners and managers can login to this portal.');
     }

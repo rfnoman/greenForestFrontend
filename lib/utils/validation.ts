@@ -124,6 +124,23 @@ export const accountSchema = z.object({
   description: z.string().optional(),
   account_type: z.enum(["asset", "liability", "equity", "revenue", "expense"]),
   parent_id: z.string().uuid().optional().or(z.literal("")),
+  opening_balance: z.string().optional(),
+  opening_balance_date: z.string().optional(),
+}).refine(
+  (data) => {
+    const balance = parseFloat(data.opening_balance || "0");
+    if (balance !== 0 && !data.opening_balance_date) return false;
+    return true;
+  },
+  {
+    message: "Opening balance date is required when opening balance is set",
+    path: ["opening_balance_date"],
+  }
+);
+
+export const openingBalanceSchema = z.object({
+  opening_balance: z.string().refine((v) => !isNaN(parseFloat(v)), "Must be a valid number"),
+  opening_balance_date: z.string().min(1, "Date is required"),
 });
 
 export const journalEntrySchema = z.object({
@@ -168,7 +185,6 @@ export const bankAccountSchema = z.object({
     .max(4, "Only last 4 digits")
     .optional()
     .or(z.literal("")),
-  gl_account_id: z.string().uuid("Please select a GL account"),
   opening_balance: z.string(),
   opening_balance_date: z.string().min(1, "Opening balance date is required"),
 });
@@ -215,6 +231,7 @@ export type ExpenseFormData = z.infer<typeof expenseSchema>;
 export type IncomeFormData = z.infer<typeof incomeSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
 export type AccountFormData = z.infer<typeof accountSchema>;
+export type OpeningBalanceFormData = z.infer<typeof openingBalanceSchema>;
 export type JournalEntryFormData = z.infer<typeof journalEntrySchema>;
 export type PaymentFormData = z.infer<typeof paymentSchema>;
 export type BankAccountFormData = z.infer<typeof bankAccountSchema>;

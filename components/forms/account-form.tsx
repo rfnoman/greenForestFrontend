@@ -59,6 +59,8 @@ export function AccountFormDialog({
           description: account.description || "",
           account_type: account.account_type,
           parent_id: account.parent_id || "",
+          opening_balance: "",
+          opening_balance_date: "",
         }
       : {
           code: "",
@@ -66,6 +68,8 @@ export function AccountFormDialog({
           description: "",
           account_type: "asset",
           parent_id: "",
+          opening_balance: "",
+          opening_balance_date: "",
         },
   });
 
@@ -73,19 +77,26 @@ export function AccountFormDialog({
 
   const onSubmit = async (data: AccountFormData) => {
     try {
+      const { opening_balance, opening_balance_date, ...rest } = data;
+      const balanceValue = parseFloat(opening_balance || "0");
+
       if (account) {
         await updateAccount.mutateAsync({
           id: account.id,
           data: {
-            ...data,
-            parent_id: data.parent_id || undefined,
+            ...rest,
+            parent_id: rest.parent_id || undefined,
           },
         });
         toast.success("Account updated successfully");
       } else {
         await createAccount.mutateAsync({
-          ...data,
-          parent_id: data.parent_id || undefined,
+          ...rest,
+          parent_id: rest.parent_id || undefined,
+          ...(balanceValue !== 0 && {
+            opening_balance: balanceValue,
+            opening_balance_date: opening_balance_date,
+          }),
         });
         toast.success("Account created successfully");
       }
@@ -209,6 +220,41 @@ export function AccountFormDialog({
                 </FormItem>
               )}
             />
+            {!account && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="opening_balance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opening Balance (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="opening_balance_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Balance Date {form.watch("opening_balance") && parseFloat(form.watch("opening_balance") || "0") !== 0 ? "" : "(Optional)"}</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
             <DialogFooter>
               <Button
                 type="button"

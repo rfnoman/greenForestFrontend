@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { bankAccountsApi } from "@/lib/api/bank-accounts";
-import { useAccounts } from "@/lib/hooks/use-accounts";
 import { bankAccountSchema, BankAccountFormData } from "@/lib/utils/validation";
 import { BANK_ACCOUNT_TYPES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -25,8 +24,6 @@ interface BankAccountFormDialogProps {
 
 export function BankAccountFormDialog({ open, onOpenChange, bankAccount }: BankAccountFormDialogProps) {
   const queryClient = useQueryClient();
-  const { data: accounts } = useAccounts({ account_type: "asset" });
-  const bankGLAccounts = accounts?.filter((a) => a.is_bank_account || a.name.toLowerCase().includes("cash") || a.name.toLowerCase().includes("bank"));
 
   const createAccount = useMutation({
     mutationFn: (data: BankAccountFormData) => bankAccountsApi.create({
@@ -34,7 +31,6 @@ export function BankAccountFormDialog({ open, onOpenChange, bankAccount }: BankA
       account_type: data.account_type,
       bank_name: data.bank_name || undefined,
       account_number_last4: data.account_number_last4 || undefined,
-      gl_account_id: data.gl_account_id,
       opening_balance: data.opening_balance,
       opening_balance_date: data.opening_balance_date,
     }),
@@ -53,7 +49,6 @@ export function BankAccountFormDialog({ open, onOpenChange, bankAccount }: BankA
       account_type: bankAccount.account_type,
       bank_name: bankAccount.bank_name || "",
       account_number_last4: bankAccount.account_number_last4 || "",
-      gl_account_id: bankAccount.gl_account_id,
       opening_balance: bankAccount.opening_balance,
       opening_balance_date: bankAccount.opening_balance_date,
     } : {
@@ -61,7 +56,6 @@ export function BankAccountFormDialog({ open, onOpenChange, bankAccount }: BankA
       account_type: "checking",
       bank_name: "",
       account_number_last4: "",
-      gl_account_id: "",
       opening_balance: "0",
       opening_balance_date: format(new Date(), "yyyy-MM-dd"),
     },
@@ -129,18 +123,6 @@ export function BankAccountFormDialog({ open, onOpenChange, bankAccount }: BankA
                 </FormItem>
               )} />
             </div>
-            <FormField control={form.control} name="gl_account_id" render={({ field }) => (
-              <FormItem>
-                <FormLabel>GL Account</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select GL account" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    {bankGLAccounts?.map((account) => <SelectItem key={account.id} value={account.id}>{account.code} - {account.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="opening_balance" render={({ field }) => (
                 <FormItem>
