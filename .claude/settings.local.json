@@ -6,7 +6,8 @@
       "Bash(npm info next versions --json)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run build)"
     ]
   }
 }
