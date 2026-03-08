@@ -137,6 +137,31 @@ export default function AccountantLoginPage() {
             </Button>
           </form>
         </Form>
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            // Clear existing auth state so stale tokens don't interfere
+            Object.keys(localStorage)
+              .filter((key) => key.startsWith("greenforest_"))
+              .forEach((key) => localStorage.removeItem(key));
+            const oneAuthUrl = process.env.NEXT_PUBLIC_ONE_AUTH_URL;
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const callbackUrl = encodeURIComponent(`${appUrl}/accountant/callback`);
+            window.location.href = `${oneAuthUrl}/login/?next=${callbackUrl}&force_login=true`;
+          }}
+        >
+          Continue with Priyo One Auth
+        </Button>
       </CardContent>
     </Card>
   );

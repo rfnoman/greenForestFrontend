@@ -33,7 +33,10 @@ export default function DashboardLayout({
     if (!isAuthLoading && !isAuthenticated) {
       router.push("/login");
     }
-  }, [isAuthenticated, isAuthLoading, router]);
+    if (!isAuthLoading && isAuthenticated && user?.user_type === null) {
+      router.push("/select-role?type=owner_manager");
+    }
+  }, [isAuthenticated, isAuthLoading, user, router]);
 
   if (isAuthLoading || isBusinessLoading) {
     return (

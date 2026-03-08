@@ -5,6 +5,20 @@ export interface TokenResponse {
   role_id: string;
 }
 
+export interface OneAuthLoginResponse {
+  access: string;
+  refresh: string;
+  role_id: string;
+  user: User;
+  is_new_user: boolean;
+}
+
+export interface SetRoleResponse {
+  access: string;
+  refresh: string;
+  user: User;
+}
+
 // User
 export type UserType = 'owner' | 'manager' | 'accountant' | 'accountant_supervisor';
 
@@ -15,7 +29,7 @@ export interface User {
   first_name: string;
   last_name: string;
   avatar_url: string | null;
-  user_type: UserType;
+  user_type: UserType | null;
   is_email_verified: boolean;
   is_active: boolean;
   date_joined: string;

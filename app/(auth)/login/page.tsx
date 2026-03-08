@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { loginSchema, LoginFormData } from "@/lib/utils/validation";
@@ -27,8 +28,15 @@ import {
 } from "@/components/ui/form";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, isAuthLoading, router]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -113,6 +121,32 @@ export default function LoginPage() {
             Sign up
           </Link>
         </div>
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            // Clear all auth state before redirecting to One Auth
+            Object.keys(localStorage)
+              .filter((key) => key.startsWith("greenforest_"))
+              .forEach((key) => localStorage.removeItem(key));
+            const oneAuthUrl = process.env.NEXT_PUBLIC_ONE_AUTH_URL;
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+            if (!oneAuthUrl || !appUrl) return;
+            const callbackUrl = encodeURIComponent(`${appUrl}/auth/callback`);
+            window.location.href = `${oneAuthUrl}/login/?next=${callbackUrl}&force_login=true`;
+          }}
+        >
+          Continue with Priyo One Auth
+        </Button>
       </CardContent>
     </Card>
   );
