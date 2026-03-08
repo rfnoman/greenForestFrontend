@@ -4,14 +4,6 @@ import { useState } from "react";
 import { formatDate, formatCurrency } from "@/lib/utils/format";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { FileText } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const STATUS_CONFIG: Record<string, { color: string; variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+  draft: { color: "bg-gray-500", variant: "secondary", label: "Draft" },
+  ask_for_review: { color: "bg-orange-500", variant: "outline", label: "Review Requested" },
+  posted: { color: "bg-green-500", variant: "default", label: "Posted" },
+  voided: { color: "bg-red-500", variant: "destructive", label: "Voided" },
+};
 
 interface JournalEntryFeedProps {
   businessId?: string;
@@ -183,43 +182,51 @@ export function JournalEntryFeed({ businessId }: JournalEntryFeedProps) {
           </Badge>
         </div>
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Entry #</TableHead>
-                <TableHead>Business</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEntries && filteredEntries.length > 0 ? (
-                filteredEntries.map((entry) => (
-                  <TableRow key={entry.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleView(entry)}>
-                    <TableCell>{formatDate(entry.entry_date)}</TableCell>
-                    <TableCell className="font-medium">{entry.entry_number}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{entry.business_name}</div>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {entry.description || "\u2014"}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
+        <div className="space-y-3">
+          {filteredEntries && filteredEntries.length > 0 ? (
+            filteredEntries.map((entry) => {
+              const statusConfig = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft;
+              return (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => handleView(entry)}
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${statusConfig.color}`} />
+                      <Badge variant="outline" className="text-xs whitespace-nowrap">
+                        {entry.business_name}
+                      </Badge>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{entry.entry_number}</span>
+                        <Badge variant={statusConfig.variant} className="text-xs">
+                          {statusConfig.label}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {entry.description || "No description"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                    <span className="text-sm font-medium">
                       {formatCurrency(calculateTotal(entry), "USD")}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No entries found matching your search
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(entry.entry_date)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No entries found matching your search
+            </div>
+          )}
         </div>
 
         <div className="text-sm text-muted-foreground">

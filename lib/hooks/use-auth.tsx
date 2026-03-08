@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { authApi } from "@/lib/api/auth";
-import type { User, RegisterInput } from "@/lib/types";
+import type { User, RegisterInput, OneAuthLoginResponse } from "@/lib/types";
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +14,7 @@ interface AuthContextType {
   accessToken: string | null;
   isImpersonating: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithOneAuth: (data: OneAuthLoginResponse) => void;
   register: (data: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -142,14 +143,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fetch user data to check user type
     const userData = await authApi.getMe();
 
-    // Only allow owner and manager to login
-    if (userData.user_type === 'accountant') {
+    // Only allow owner and manager to login to this portal
+    if (userData.user_type === 'accountant' || userData.user_type === 'accountant_supervisor') {
       clearAuth();
       throw new Error('Access denied. Only owners and managers can login to this portal.');
     }
 
     setUser(userData);
     router.push("/");
+  };
+
+  const loginWithOneAuth = (data: OneAuthLoginResponse) => {
+    // Store tokens in localStorage first
+    localStorage.setItem(ACCESS_TOKEN_KEY, data.access);
+    localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh);
+    localStorage.setItem(ROLE_ID_KEY, data.role_id);
+
+    // Set API client headers
+    apiClient.setAccessToken(data.access);
+    apiClient.setRoleId(data.role_id);
+
+    // Update React state — set user and token together, never null in between
+    queryClient.clear();
+    setAccessToken(data.access);
+    setUser(data.user);
+    setIsLoading(false);
   };
 
   const register = async (data: RegisterInput) => {
@@ -264,6 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         accessToken,
         isImpersonating,
         login,
+        loginWithOneAuth,
         register,
         logout,
         refreshUser,

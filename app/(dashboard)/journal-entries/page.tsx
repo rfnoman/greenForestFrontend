@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/shared/data-table";
 import { TableSkeleton } from "@/components/shared/loading-skeleton";
+import { JournalEntrySheet } from "@/components/journal-entries/journal-entry-sheet";
 import type { JournalEntry, JournalEntryStatus } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -39,6 +40,8 @@ export default function JournalEntriesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["journal-entries"] }),
   });
   const [voidingEntry, setVoidingEntry] = useState<JournalEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const currency = currentBusiness?.currency || "USD";
 
   const handlePost = async (entry: JournalEntry) => {
@@ -77,9 +80,12 @@ export default function JournalEntriesPage() {
       accessorKey: "entry_number",
       header: "Entry #",
       cell: ({ row }) => (
-        <Link href={`/journal-entries/${row.original.id}`} className="font-medium hover:underline">
+        <span
+          className="font-medium hover:underline cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); setSelectedEntry(row.original); setSheetOpen(true); }}
+        >
           {row.original.entry_number}
-        </Link>
+        </span>
       ),
     },
     { accessorKey: "entry_date", header: "Date", cell: ({ row }) => formatDate(row.original.entry_date) },
@@ -102,14 +108,14 @@ export default function JournalEntriesPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild><Link href={`/journal-entries/${entry.id}`}><Eye className="h-4 w-4 mr-2" />View</Link></DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedEntry(entry); setSheetOpen(true); }}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
               {entry.status === "draft" && canPostJournal && (
-                <DropdownMenuItem onClick={() => handlePost(entry)}><CheckCircle className="h-4 w-4 mr-2" />Post</DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handlePost(entry); }}><CheckCircle className="h-4 w-4 mr-2" />Post</DropdownMenuItem>
               )}
               {entry.status === "posted" && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive" onClick={() => setVoidingEntry(entry)}>
+                  <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setVoidingEntry(entry); }}>
                     <Ban className="h-4 w-4 mr-2" />Void
                   </DropdownMenuItem>
                 </>
@@ -151,7 +157,13 @@ export default function JournalEntriesPage() {
           {JOURNAL_ENTRY_STATUSES.map((status) => <TabsTrigger key={status.value} value={status.value}>{status.label}</TabsTrigger>)}
         </TabsList>
         <TabsContent value={selectedStatus} className="mt-4">
-          <DataTable columns={columns} data={entries || []} searchKey="description" searchPlaceholder="Search entries..." />
+          <DataTable
+            columns={columns}
+            data={entries || []}
+            searchKey="description"
+            searchPlaceholder="Search entries..."
+            onRowClick={(entry) => { setSelectedEntry(entry); setSheetOpen(true); }}
+          />
         </TabsContent>
       </Tabs>
 
@@ -171,6 +183,12 @@ export default function JournalEntriesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <JournalEntrySheet
+        entry={selectedEntry}
+        open={sheetOpen}
+        onOpenChange={(open) => { setSheetOpen(open); if (!open) setSelectedEntry(null); }}
+      />
     </div>
   );
 }

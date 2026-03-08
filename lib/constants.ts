@@ -2,7 +2,7 @@ export const ACCOUNT_TYPES = [
   { value: "asset", label: "Asset" },
   { value: "liability", label: "Liability" },
   { value: "equity", label: "Equity" },
-  { value: "revenue", label: "Revenue" },
+  { value: "revenue", label: "Income" },
   { value: "expense", label: "Expense" },
 ] as const;
 
@@ -30,6 +30,7 @@ export const BILL_STATUSES = [
 
 export const JOURNAL_ENTRY_STATUSES = [
   { value: "draft", label: "Draft", color: "bg-gray-100 text-gray-800" },
+  { value: "ask_for_review", label: "Reviewing", color: "bg-yellow-100 text-yellow-800" },
   { value: "posted", label: "Posted", color: "bg-green-100 text-green-800" },
   { value: "voided", label: "Voided", color: "bg-gray-100 text-gray-500" },
 ] as const;

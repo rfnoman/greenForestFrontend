@@ -5,6 +5,20 @@ export interface TokenResponse {
   role_id: string;
 }
 
+export interface OneAuthLoginResponse {
+  access: string;
+  refresh: string;
+  role_id: string;
+  user: User;
+  is_new_user: boolean;
+}
+
+export interface SetRoleResponse {
+  access: string;
+  refresh: string;
+  user: User;
+}
+
 // User
 export type UserType = 'owner' | 'manager' | 'accountant' | 'accountant_supervisor';
 
@@ -15,7 +29,7 @@ export interface User {
   first_name: string;
   last_name: string;
   avatar_url: string | null;
-  user_type: UserType;
+  user_type: UserType | null;
   is_email_verified: boolean;
   is_active: boolean;
   date_joined: string;
@@ -77,6 +91,8 @@ export interface Account {
   is_system: boolean;
   is_active: boolean;
   is_bank_account: boolean;
+  opening_balance: number | null;
+  opening_balance_date: string | null;
 }
 
 // Contact
@@ -288,6 +304,7 @@ export interface BankAccount {
   bank_name: string | null;
   account_number_last4: string | null;
   gl_account_id: string;
+  gl_account_code: string;
   opening_balance: string;
   opening_balance_date: string;
   current_balance: string;
@@ -552,6 +569,45 @@ export interface BillAgingReport {
   total: string;
 }
 
+// Account Statement
+export interface AccountStatementLine {
+  journal_entry_id: string;
+  entry_number: string;
+  entry_date: string;
+  description: string;
+  line_description: string;
+  source_type: SourceType;
+  source_id: string | null;
+  contact_name: string | null;
+  debit: string;
+  credit: string;
+  running_balance: string;
+}
+
+export interface AccountStatementSummary {
+  total_debits: string;
+  total_credits: string;
+  net_change: string;
+}
+
+export interface AccountStatementResponse {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_type: AccountType;
+  normal_balance: NormalBalance;
+  from_date: string;
+  to_date: string;
+  opening_balance: string;
+  closing_balance: string;
+  lines: AccountStatementLine[];
+  summary: AccountStatementSummary;
+  total_lines: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 // API Response Types
 export interface PaginatedResponse<T> {
   items: T[];
@@ -670,6 +726,24 @@ export interface CreateAccountInput {
   description?: string;
   account_type: AccountType;
   parent_id?: string;
+  is_bank_account?: boolean;
+  opening_balance?: number;
+  opening_balance_date?: string;
+}
+
+export interface OpeningBalanceResponse {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  opening_balance: number;
+  opening_balance_date: string;
+  journal_entry_id: string | null;
+  journal_entry_number: string;
+}
+
+export interface SetOpeningBalanceInput {
+  opening_balance: number;
+  opening_balance_date: string;
 }
 
 export interface RecordPaymentInput {
@@ -686,7 +760,6 @@ export interface CreateBankAccountInput {
   account_type: BankAccountType;
   bank_name?: string;
   account_number_last4?: string;
-  gl_account_id: string;
   opening_balance: string;
   opening_balance_date: string;
 }

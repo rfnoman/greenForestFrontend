@@ -91,6 +91,9 @@ export default function BankAccountsPage() {
                   <Badge variant="outline" className="capitalize">{typeLabel}</Badge>
                   {!account.is_active && <Badge variant="secondary">Inactive</Badge>}
                 </div>
+                {account.gl_account_code && (
+                  <p className="text-xs text-muted-foreground mt-2">Linked GL Account: {account.gl_account_code}</p>
+                )}
               </CardContent>
             </Card>
           );

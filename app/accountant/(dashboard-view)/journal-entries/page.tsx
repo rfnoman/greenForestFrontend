@@ -7,21 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowUpDown, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAllJournalEntries } from "@/lib/hooks/use-all-journal-entries";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JournalEntryWithBusiness } from "@/lib/types";
@@ -42,6 +34,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const STATUS_CONFIG: Record<string, { color: string; variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+  draft: { color: "bg-gray-500", variant: "secondary", label: "Draft" },
+  ask_for_review: { color: "bg-orange-500", variant: "outline", label: "Review Requested" },
+  posted: { color: "bg-green-500", variant: "default", label: "Posted" },
+  voided: { color: "bg-red-500", variant: "destructive", label: "Voided" },
+};
 
 type SortField = "entry_date" | "entry_number" | "business_name" | "created_at";
 
@@ -121,16 +120,6 @@ export default function AccountantJournalEntriesPage() {
     return entry.lines.reduce((sum, line) => sum + parseFloat(line.debit || "0"), 0);
   };
 
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("desc");
-    }
-    setPage(1);
-  };
-
   const handleView = (entry: JournalEntryWithBusiness) => {
     setSelectedEntry(entry);
     setQuickViewOpen(true);
@@ -177,16 +166,6 @@ export default function AccountantJournalEntriesPage() {
   const handlePageSizeChange = (value: string) => {
     setPageSize(Number(value));
     setPage(1);
-  };
-
-  const statusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      draft: "secondary",
-      ask_for_review: "outline",
-      posted: "default",
-      voided: "destructive",
-    };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
   return (
@@ -250,47 +229,45 @@ export default function AccountantJournalEntriesPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" onClick={() => toggleSort("entry_date")}>
-                          Date <ArrowUpDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" onClick={() => toggleSort("entry_number")}>
-                          Entry # <ArrowUpDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button variant="ghost" size="sm" onClick={() => toggleSort("business_name")}>
-                          Business <ArrowUpDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {entries.map((entry) => (
-                      <TableRow key={entry.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleView(entry)}>
-                        <TableCell>{formatDate(entry.entry_date)}</TableCell>
-                        <TableCell className="font-medium">{entry.entry_number}</TableCell>
-                        <TableCell>{entry.business_name}</TableCell>
-                        <TableCell>{statusBadge(entry.status)}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {entry.description || "\u2014"}
-                        </TableCell>
-                        <TableCell className="font-medium">
+              <div className="space-y-3">
+                {entries.map((entry) => {
+                  const statusConfig = STATUS_CONFIG[entry.status] || STATUS_CONFIG.draft;
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleView(entry)}
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${statusConfig.color}`} />
+                          <Badge variant="outline" className="text-xs whitespace-nowrap">
+                            {entry.business_name}
+                          </Badge>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{entry.entry_number}</span>
+                            <Badge variant={statusConfig.variant} className="text-xs">
+                              {statusConfig.label}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {entry.description || "No description"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                        <span className="text-sm font-medium">
                           {formatCurrency(calculateTotal(entry), "USD")}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(entry.entry_date)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Pagination */}

@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { TokenResponse, User, RegisterInput, RegisterResponse } from "@/lib/types";
+import type { TokenResponse, OneAuthLoginResponse, SetRoleResponse, User, RegisterInput, RegisterResponse } from "@/lib/types";
 
 export interface LoginInput {
   email: string;
@@ -26,4 +26,10 @@ export const authApi = {
       "/users/end-impersonate",
       { refresh: refreshToken }
     ),
+
+  oneAuthLogin: (data: { one_auth_token: string; login_type: "owner_manager" | "staff" }) =>
+    apiClient.post<OneAuthLoginResponse>("/auth/one-auth/login", data),
+
+  setRole: (data: { user_type: "owner" | "manager" | "accountant" | "accountant_supervisor" }) =>
+    apiClient.post<SetRoleResponse>("/users/me/set-role", data),
 };

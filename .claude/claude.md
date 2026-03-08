@@ -924,6 +924,7 @@ curl -X GET /api/v1/users/me \
     "bank_name": "string | null",
     "account_number_last4": "1234 | null",
     "gl_account_id": "uuid",
+    "gl_account_code": "110500",
     "opening_balance": "1000.00",
     "opening_balance_date": "2024-01-01",
     "current_balance": "5000.00",
@@ -934,6 +935,7 @@ curl -X GET /api/v1/users/me \
 ```
 
 #### POST `/bank-accounts` - Create Bank Account
+**Note:** The backend auto-generates the GL account (Chart of Accounts entry) based on account_type. No `gl_account_id` needed in the request.
 **Request:**
 ```json
 {
@@ -941,7 +943,6 @@ curl -X GET /api/v1/users/me \
   "account_type": "checking | savings | credit_card | cash | other",
   "bank_name": "string",
   "account_number_last4": "1234",
-  "gl_account_id": "uuid",
   "opening_balance": "1000.00",
   "opening_balance_date": "2024-01-01"
 }
