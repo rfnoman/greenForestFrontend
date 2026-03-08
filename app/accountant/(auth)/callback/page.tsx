@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api/client";
 import { authApi } from "@/lib/api/auth";
 
-export default function AccountantOneAuthCallbackPage() {
+function AccountantOneAuthCallbackContent() {
   const searchParams = useSearchParams();
   const processed = useRef(false);
 
@@ -62,5 +62,24 @@ export default function AccountantOneAuthCallbackPage() {
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="mt-4 text-sm text-muted-foreground">Signing you in...</p>
     </div>
+  );
+}
+
+export default function AccountantOneAuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100 dark:from-gray-950 dark:via-emerald-950/30 dark:to-gray-900">
+          <div className="flex items-center gap-2 mb-6">
+            <Leaf className="h-8 w-8 text-primary" />
+            <span className="text-2xl font-bold">GreenForest</span>
+          </div>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-sm text-muted-foreground">Signing you in...</p>
+        </div>
+      }
+    >
+      <AccountantOneAuthCallbackContent />
+    </Suspense>
   );
 }
